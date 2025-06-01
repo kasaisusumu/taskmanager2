@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>タスク管理（ドラッグ＆ドロップ対応版）</title>
+  <style>
+    body {
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f7f7f7;
+}
+
+#app {
+  padding: 20px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+h1 {
+  margin: 0;
+}
+
+button {
+  cursor: pointer;
+  background-color: #4CAF50;
+  border: none;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+.project, .subproject, .task {
+  margin: 10px 0;
+  padding: 10px;
+  background-color: white;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  position: relative;
+}
+
+.bar {
+  width: 6px;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+}
+
+.task-content {
+content.appendChild(dragHandle); // 一番先頭にするなら insertBefore でもOK
+
+  margin-left: 12px;
+}
+.drag-handle {
+  cursor: grab;
+  user-select: none;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  margin-left: 5px;
+}
+
+.task-list {
+  margin-left: 20px;
+  padding-left: 10px;
+  border-left: 2px dashed #ccc;
+}
+
+.completed-title {
+  color: var(--comment-color); /* コメントと同じ色をCSS変数で管理しているなら */
+  text-decoration: line-through;
+}
+
+
+
+
+  </style>
+</head>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>タスク管理サイト</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>タスク管理</h1>
+      <button id="addProjectBtn" title="プロジェクト追加">＋</button>
+    </header>
+    <main id="projectList"></main>
+  </div>
+  <script src="script.js"></script>
+
+<script>
+  let data = JSON.parse(localStorage.getItem("taskData")) || [];
+
+const projectList = document.getElementById("projectList");
+const addProjectBtn = document.getElementById("addProjectBtn");
+
+const colors = ['#FF5722', '#4CAF50', '#2196F3', '#FFC107', '#9C27B0', '#00BCD4', '#FF9800', '#E91E63', '#795548', '#3F51B5'];
+
+function saveData() {
+  localStorage.setItem("taskData", JSON.stringify(data));
+}
+
+function render() {
+  projectList.innerHTML = "";
+  data.forEach((project, index) => {
+    const projectElem = createProjectElement(project, index);
+    projectList.appendChild(projectElem);
+  });
+
+  initSortable(); // ここで並べ替えを毎回初期化
+}
+
+function initSortable() {
+  // プロジェクトの並べ替え（最上位）
+  Sortable.create(projectList, {
+    animation: 150,
+	handle: ".drag-handle", // ← ここが重要！
+    onEnd: function (evt) {
+      const [moved] = data.splice(evt.oldIndex, 1);
+      data.splice(evt.newIndex, 0, moved);
+      saveData();
+      render();
+    }
+  });
+
+  // 全ての task-list に対して再帰的にSortableを初期化
+ // 子タスクの並べ替え（再帰的）
+document.querySelectorAll(".task-list").forEach(list => {
+  Sortable.create(list, {
+    animation: 150,
+    handle: ".drag-handle",  // ← ドラッグハンドルを指定
+    onEnd: function (evt) {
+      const parentInfo = getParentInfo(list);
+      if (!parentInfo) return;
+
+      const movedItem = parentInfo.children.splice(evt.oldIndex, 1)[0];
+      parentInfo.children.splice(evt.newIndex, 0, movedItem);
+
+      saveData();
+      render();
+    }
+  });
+});
+
+}
+
+function findParentArrayByPath(path) {
+  const indices = path.split('-').map(Number);
+  indices.pop(); // 自分自身のインデックスを除く → 親の配列を取得するため
+  let current = data;
+  for (const i of indices) {
+    if (!current[i]) return null;
+    current = current[i].children;
+  }
+  return current;
+}
+
+
+
+function getParentInfo(listElem) {
+  // listElemの親divの task-content > span のテキストを取得
+  const parentContent = listElem.parentElement.querySelector(".task-content > span");
+  const parentName = parentContent?.textContent?.trim();
+  if (!parentName) return null;
+
+  function findRecursive(nodes, targetName) {
+    for (const node of nodes) {
+      if (node.name === targetName) {
+        return { parent: node, children: node.children || [] };
+      }
+      if (node.children && node.children.length) {
+        const res = findRecursive(node.children, targetName);
+        if (res) return res;
+      }
+    }
+    return null;
+  }
+
+  return findRecursive(data, parentName);
+}
+
+
+function enableSortable() {
+  document.querySelectorAll(".task-list").forEach(list => {
+    Sortable.create(list, {
+      animation: 150,
+	  handle: ".drag-handle", // ← ここが重要！
+      onEnd: function (evt) {
+        const listElem = evt.from;
+        const info = getParentInfo(listElem);
+        if (!info) return;
+
+        const movedItem = info.children.splice(evt.oldIndex, 1)[0];
+        info.children.splice(evt.newIndex, 0, movedItem);
+
+        render(); // 並び替え後に再描画
+      }
+    });
+  });
+}
+
+
+
+function createProjectElement(project, index) {
+  const div = document.createElement("div");
+  div.className = "project";
+  
+
+  const bar = document.createElement("div");
+  bar.className = "bar";
+  bar.style.backgroundColor = project.color || colors[0];
+
+  const content = document.createElement("div");
+  content.className = "task-content";
+
+  const title = document.createElement("span");
+  title.textContent = project.name;
+  // title の前に dragHandle を追加
+const dragHandle = document.createElement("span");
+dragHandle.textContent = "⠿";
+dragHandle.className = "drag-handle";
+dragHandle.style.cursor = "grab";
+dragHandle.style.marginRight = "8px";
+
+// content に dragHandle を最初に追加
+content.appendChild(dragHandle);
+
+  
+
+  const editBtn = createIconButton("✏️", () => {
+    const newName = prompt("プロジェクト名を編集:", project.name);
+    if (newName) {
+      project.name = newName;
+      saveData();
+      render();
+    }
+  });
+
+  const deleteBtn = createIconButton("🗑️", () => {
+    if (confirm("本当に削除しますか？")) {
+      data.splice(index, 1);
+      saveData();
+      render();
+    }
+  });
+
+  const addSubBtn = createIconButton("➕", () => {
+    const name = prompt("小プロジェクト/タスク名:");
+    if (name) {
+      if (!project.children) project.children = [];
+      project.children.push({ name, children: [], comment: "", done: false });
+      saveData();
+      render();
+    }
+  });
+
+  const colorBtn = createIconButton("🎨", () => {
+    const newColor = prompt("0〜9の色番号を入力:\n" + colors.map((c, i) => `${i}: ${c}`).join("\n"));
+    const idx = parseInt(newColor);
+    if (!isNaN(idx) && colors[idx]) {
+      project.color = colors[idx];
+      saveData();
+      render();
+    }
+  });
+
+  content.appendChild(title);
+  content.appendChild(editBtn);
+  content.appendChild(addSubBtn);
+  content.appendChild(colorBtn);
+  content.appendChild(deleteBtn);
+
+  div.appendChild(bar);
+  div.appendChild(content);
+
+  // createProjectElement の中
+if (project.children) {
+  const ul = document.createElement("div");
+  ul.className = "task-list";  // ← ここにクラス名を付けている
+  project.children.forEach((child, childIndex) => {
+    ul.appendChild(createTaskElement(child, project, childIndex, project.color));
+  });
+  div.appendChild(ul);
+}
+
+  return div;
+}
+
+function createTaskElement(task, parent, index, color) {
+  const div = document.createElement("div");
+  div.className = "task";
+
+  const bar = document.createElement("div");
+  bar.className = "bar";
+  bar.style.backgroundColor = color;
+
+  const content = document.createElement("div");
+  content.className = "task-content";
+
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.checked = task.done;
+  checkbox.onchange = () => {
+    task.done = checkbox.checked;
+    checkAutoComplete(task, parent);
+    saveData();
+    render();
+  };
+
+  const title = document.createElement("span");
+title.textContent = task.name;  // 前のコードは " " + task.name でしたが空白は好みで調整してください
+// title の前に dragHandle を追加
+const dragHandle = document.createElement("span");
+dragHandle.textContent = "⠿";
+dragHandle.className = "drag-handle";
+dragHandle.style.cursor = "grab";
+dragHandle.style.marginRight = "8px";
+
+// content に dragHandle を最初に追加
+content.appendChild(dragHandle);
+
+
+if (task.done) {
+  title.style.color = "#666666";  // コメントの色と合わせるならこの色でOK
+  title.style.textDecoration = "line-through";
+}
+
+
+  // 期間表示用のspanを追加（コメントと同じ色、小さい文字）
+  const periodSpan = document.createElement("span");
+  periodSpan.style.fontSize = "12px";
+  periodSpan.style.color = "#666";  // コメントと同じ色に合わせる
+  periodSpan.style.marginLeft = "6px";
+  if(task.startDate && task.endDate) {
+    // 例えば YYYY-MM-DD → M/D 表示に変換
+    const formatDate = (d) => {
+      const dt = new Date(d);
+      if (isNaN(dt)) return ""; // 無効な日付は空文字
+      return `${dt.getMonth()+1}/${dt.getDate()}`;
+    };
+    periodSpan.textContent = `(${formatDate(task.startDate)}~${formatDate(task.endDate)})`;
+  }
+
+  const commentLine = document.createElement("div");
+  commentLine.style.fontSize = "12px";
+  commentLine.style.color = "#666";
+  commentLine.textContent = task.comment?.split("\n")[0] || "";
+
+  const commentBtn = createIconButton("💬", () => {
+    const newComment = prompt("コメント:", task.comment || "");
+    if (newComment != null) {
+      task.comment = newComment;
+      saveData();
+      render();
+    }
+  });
+
+  // 期間編集ボタンを追加
+  const periodBtn = createIconButton("📅", () => {
+  showPeriodEditDialog(task);
+});
+
+
+  const addSubBtn = createIconButton("➕", () => {
+    const name = prompt("タスク名:");
+    if (name) {
+      if (!task.children) task.children = [];
+      task.children.push({ name, children: [], comment: "", done: false });
+      saveData();
+      render();
+    }
+  });
+
+  const editBtn = createIconButton("✏️", () => {
+    const newName = prompt("タスク名を編集:", task.name);
+    if (newName) {
+      task.name = newName;
+      saveData();
+      render();
+    }
+  });
+
+  const deleteBtn = createIconButton("🗑️", () => {
+    if (confirm("本当に削除しますか？")) {
+      parent.children.splice(index, 1);
+      saveData();
+      render();
+    }
+  });
+
+  content.appendChild(checkbox);
+  content.appendChild(title);
+  content.appendChild(periodSpan);  // 期間表示追加
+  content.appendChild(editBtn);
+  content.appendChild(periodBtn);   // 期間編集ボタン追加
+  content.appendChild(addSubBtn);
+  content.appendChild(commentBtn);
+  content.appendChild(deleteBtn);
+  content.appendChild(commentLine);
+
+  div.appendChild(bar);
+  div.appendChild(content);
+
+  if (task.children?.length) {
+    const ul = document.createElement("div");
+    ul.className = "task-list";
+    task.children.forEach((child, childIndex) => {
+      ul.appendChild(createTaskElement(child, task, childIndex, color));
+    });
+    div.appendChild(ul);
+  }
+
+  return div;
+}
+function showPeriodEditDialog(task) {
+  // モーダル背景
+  const modalBg = document.createElement("div");
+  modalBg.style.position = "fixed";
+  modalBg.style.top = "0";
+  modalBg.style.left = "0";
+  modalBg.style.width = "100%";
+  modalBg.style.height = "100%";
+  modalBg.style.backgroundColor = "rgba(0,0,0,0.3)";
+  modalBg.style.display = "flex";
+  modalBg.style.alignItems = "center";
+  modalBg.style.justifyContent = "center";
+  modalBg.style.zIndex = "9999";
+
+  // モーダル本体
+  const modal = document.createElement("div");
+  modal.style.backgroundColor = "white";
+  modal.style.padding = "16px";
+  modal.style.borderRadius = "8px";
+  modal.style.boxShadow = "0 2px 10px rgba(0,0,0,0.2)";
+  modal.style.minWidth = "280px";
+
+  const title = document.createElement("h3");
+  title.textContent = "期間を選択";
+
+  const startLabel = document.createElement("label");
+  startLabel.textContent = "開始日:";
+  startLabel.style.display = "block";
+  startLabel.style.marginTop = "8px";
+
+  const startInput = document.createElement("input");
+  startInput.type = "date";
+  startInput.value = task.startDate || "";
+
+  const endLabel = document.createElement("label");
+  endLabel.textContent = "終了日:";
+  endLabel.style.display = "block";
+  endLabel.style.marginTop = "8px";
+
+  const endInput = document.createElement("input");
+  endInput.type = "date";
+  endInput.value = task.endDate || "";
+
+  // ボタン
+  const btnContainer = document.createElement("div");
+  btnContainer.style.marginTop = "12px";
+  btnContainer.style.textAlign = "right";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.textContent = "キャンセル";
+  cancelBtn.style.marginRight = "8px";
+
+  const okBtn = document.createElement("button");
+  okBtn.textContent = "OK";
+
+  cancelBtn.onclick = () => {
+    document.body.removeChild(modalBg);
+  };
+
+  okBtn.onclick = () => {
+    // 簡単な日付チェック（開始日 <= 終了日）
+    if (startInput.value && endInput.value && startInput.value > endInput.value) {
+      alert("開始日は終了日以前を選択してください。");
+      return;
+    }
+    task.startDate = startInput.value || "";
+    task.endDate = endInput.value || "";
+    saveData();
+    render();
+    document.body.removeChild(modalBg);
+  };
+
+  btnContainer.appendChild(cancelBtn);
+  btnContainer.appendChild(okBtn);
+
+  modal.appendChild(title);
+  modal.appendChild(startLabel);
+  modal.appendChild(startInput);
+  modal.appendChild(endLabel);
+  modal.appendChild(endInput);
+  modal.appendChild(btnContainer);
+
+  modalBg.appendChild(modal);
+  document.body.appendChild(modalBg);
+}
+
+function checkAutoComplete(task, parent) {
+  if (!parent || !parent.children) return;
+  const allDone = parent.children.every(t => t.done);
+  if (allDone) parent.done = true;
+  else parent.done = false;
+}
+
+function createIconButton(icon, action) {
+  const btn = document.createElement("button");
+  btn.className = "icon-btn";
+  btn.innerText = icon;
+  btn.onclick = action;
+  return btn;
+}
+
+addProjectBtn.onclick = () => {
+  const name = prompt("プロジェクト名:");
+  if (name) {
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    data.push({ name, children: [], color });
+    saveData();
+    render();
+  }
+};
+
+render();
+</script>
+</body>
+</html>
