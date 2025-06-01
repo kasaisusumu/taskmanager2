@@ -101,6 +101,15 @@ button {
   font-size: 16px;
   margin: 0 4px;
 }
+.task-content > *:not(.drag-handle) {
+  pointer-events: auto;
+}
+.project, .task {
+  pointer-events: none;
+}
+.drag-handle {
+  pointer-events: auto;
+}
 
 </style>
 
