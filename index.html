@@ -125,8 +125,11 @@
   text-decoration: underline;
 }
 .leaf-task {
-  background-color: #f0f0f0; /* 薄いグレー */
+  /* 例えば背景を明るくする・太字にするなど */
+  font-weight: bold;
+  background-color: #fffceb;
 }
+
 
 
   </style>
@@ -467,11 +470,10 @@ function createTaskElement(task, parent, index, color) {
   div.className = "task";
 
   const isLeaf = !task.children || task.children.length === 0;
+if (isLeaf && !task.done) {
+  div.classList.add("leaf-task");  // 最下層かつ未完了なら追加
+}
 
-  // isLeaf かつ未完了なら leaf-task クラスを追加
-  if (isLeaf && !task.done) {
-    div.classList.add("leaf-task");
-  }
 
   const bar = document.createElement("div");
   bar.className = "bar";
@@ -484,21 +486,22 @@ function createTaskElement(task, parent, index, color) {
   checkbox.type = "checkbox";
   checkbox.checked = task.done;
   checkbox.onchange = () => {
-    task.done = checkbox.checked;
+  task.done = checkbox.checked;
 
-    // isLeaf なら leaf-task クラスの状態を更新
-    if (isLeaf) {
-      if (task.done) {
-        div.classList.remove("leaf-task");
-      } else {
-        div.classList.add("leaf-task");
-      }
+  // 最下層かつ未完了なら leaf-task クラスを追加、それ以外は外す
+  if (isLeaf) {
+    if (!task.done) {
+      div.classList.add("leaf-task");
+    } else {
+      div.classList.remove("leaf-task");
     }
+  }
 
-    checkAutoComplete(task, parent);
-    saveData();
-    render();
-  };
+  checkAutoComplete(task, parent);
+  saveData();
+  render();
+};
+
 
   const title = document.createElement("span");
   title.textContent = task.name;
