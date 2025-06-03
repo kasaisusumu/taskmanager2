@@ -466,10 +466,9 @@ function createTaskElement(task, parent, index, color) {
   const div = document.createElement("div");
   div.className = "task";
 
-  // isLeaf: 子タスクが存在しないタスク（最下層）
   const isLeaf = !task.children || task.children.length === 0;
 
-  // isLeaf かつ 未完了 なら leaf-task クラス追加
+  // isLeaf かつ未完了なら leaf-task クラスを追加
   if (isLeaf && !task.done) {
     div.classList.add("leaf-task");
   }
@@ -487,7 +486,7 @@ function createTaskElement(task, parent, index, color) {
   checkbox.onchange = () => {
     task.done = checkbox.checked;
 
-    // 最下層なら leaf-task クラスの制御
+    // isLeaf なら leaf-task クラスの状態を更新
     if (isLeaf) {
       if (task.done) {
         div.classList.remove("leaf-task");
@@ -504,12 +503,6 @@ function createTaskElement(task, parent, index, color) {
   const title = document.createElement("span");
   title.textContent = task.name;
 
-  if (task.done) {
-    title.style.color = "#666666";
-    title.style.textDecoration = "line-through";
-  }
-
-  // ポップアップメニュー
   const popupMenu = createPopupMenu(task, parent, index, "task");
   document.body.appendChild(popupMenu);
   title.addEventListener("click", (e) => {
@@ -517,12 +510,15 @@ function createTaskElement(task, parent, index, color) {
     togglePopupMenu(title, popupMenu);
   });
 
-  // ドラッグハンドル
   const dragHandle = createIconButton("↕️");
   dragHandle.classList.add("drag-handle");
   content.appendChild(dragHandle);
 
-  // 期間表示
+  if (task.done) {
+    title.style.color = "#666666";
+    title.style.textDecoration = "line-through";
+  }
+
   const periodSpan = document.createElement("span");
   periodSpan.style.fontSize = "12px";
   periodSpan.style.color = "#666";
@@ -536,13 +532,11 @@ function createTaskElement(task, parent, index, color) {
     periodSpan.textContent = `(${formatDate(task.startDate)}~${formatDate(task.endDate)})`;
   }
 
-  // コメント1行目表示
   const commentLine = document.createElement("div");
   commentLine.style.fontSize = "12px";
   commentLine.style.color = "#666";
   commentLine.textContent = task.comment?.split("\n")[0] || "";
 
-  // コメントボタン
   const commentBtn = createIconButton("💬", () => {
     const newComment = prompt("コメント:", task.comment || "");
     if (newComment != null) {
@@ -552,12 +546,10 @@ function createTaskElement(task, parent, index, color) {
     }
   });
 
-  // 期間編集ボタン
   const periodBtn = createIconButton("📅", () => {
     showPeriodEditDialog(task);
   });
 
-  // 子タスク追加ボタン
   const addSubBtn = createIconButton("➕", () => {
     const name = prompt("タスク名:");
     if (name) {
@@ -568,7 +560,6 @@ function createTaskElement(task, parent, index, color) {
     }
   });
 
-  // 編集ボタン
   const editBtn = createIconButton("✏️", () => {
     const newName = prompt("タスク名を編集:", task.name);
     if (newName) {
@@ -578,7 +569,6 @@ function createTaskElement(task, parent, index, color) {
     }
   });
 
-  // 削除ボタン
   const deleteBtn = createIconButton("🗑️", () => {
     if (confirm("本当に削除しますか？")) {
       parent.children.splice(index, 1);
@@ -587,21 +577,15 @@ function createTaskElement(task, parent, index, color) {
     }
   });
 
-  // 各UI要素をcontentに追加
   content.appendChild(checkbox);
   content.appendChild(title);
   content.appendChild(periodSpan);
   content.appendChild(addSubBtn);
-  content.appendChild(commentBtn);
-  content.appendChild(periodBtn);
-  content.appendChild(editBtn);
-  content.appendChild(deleteBtn);
   content.appendChild(commentLine);
 
   div.appendChild(bar);
   div.appendChild(content);
 
-  // 子タスク表示（再帰）
   if (task.children?.length) {
     const ul = document.createElement("div");
     ul.className = "task-list";
