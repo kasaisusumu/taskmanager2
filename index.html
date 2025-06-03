@@ -124,6 +124,10 @@
 	.task > .task-content > span.leaf-task {
   text-decoration: underline;
 }
+.leaf-task {
+  background-color: #f0f0f0; /* 薄いグレー */
+}
+
 
   </style>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -460,6 +464,11 @@ if (project.children) {
 function createTaskElement(task, parent, index, color) {
   const div = document.createElement("div");
   div.className = "task";
+  
+  // ここで子タスクの有無を判定
+  if (!task.children || task.children.length === 0) {
+    div.classList.add("leaf-task");  // 最下層タスク用のクラスを追加
+  }
 
   const bar = document.createElement("div");
   bar.className = "bar";
