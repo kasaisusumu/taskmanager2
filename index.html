@@ -3,136 +3,141 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>タスク管理（ドラッグ＆ドロップ対応版）</title>
+  <title>タスク管理（階層構造対応）</title>
   <style>
+    :root {
+      --bar-width: 5px;
+      --project-margin: 6px;
+      --task-padding: 8px;
+      --indent-size: 4px;
+    }
+
     body {
-  font-family: sans-serif;
-  margin: 0;
-  padding: 0;
-  background: #f7f7f7;
-}
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f7f7f7;
+    }
 
-#app {
-  padding: 20px;
-}
+    #app {
+      padding: 16px;
+      max-width: 800px;
+      margin: auto;
+    }
 
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
 
-h1 {
-  margin: 0;
-}
+    h1 {
+      margin: 0;
+      font-size: 1.4em;
+    }
 
-button {
-  cursor: pointer;
-  background-color: #4CAF50;
-  border: none;
-  color: white;
-  padding: 6px 12px;
-  border-radius: 5px;
-  font-size: 16px;
-}
+    button {
+      cursor: pointer;
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
 
-.project, .subproject, .task {
-  margin: 10px 0;
-  padding: 10px;
-  background-color: white;
-  border-radius: 6px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  position: relative;
-}
+    .project, .task {
+      background-color: white;
+      border-radius: 5px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      position: relative;
+      margin-top: var(--project-margin);
+      padding: var(--task-padding);
+    }
 
-.bar {
-  width: 6px;
-  height: 100%;
-  position: absolute;
-  left: 0;
-  top: 0;
-  border-top-left-radius: 6px;
-  border-bottom-left-radius: 6px;
-}
+    .bar {
+      width: var(--bar-width);
+      height: 100%;
+      position: absolute;
+      left: 0;
+      top: 0;
+      border-top-left-radius: 5px;
+      border-bottom-left-radius: 5px;
+    }
 
-.task-content {
-  margin-left: 12px;
-}
+    .task-content {
+      margin-left: calc(var(--bar-width) + 8px);
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
 
-.icon-btn {
-  background: none;
-  border: none;
-  font-size: 16px;
-  margin-left: 5px;
-}
+    .task-list {
+      margin-left: var(--indent-size);
+      padding-left: 2px;
+      border-left: 1px dashed #ccc;
+      margin-top: 4px;
+    }
 
-.task-list {
-  margin-left: 20px;
-  padding-left: 10px;
-  border-left: 2px dashed #ccc;
-}
+    .icon-btn, .drag-handle {
+      background: none;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+    }
 
-.completed-title {
-  color: var(--comment-color); /* コメントと同じ色をCSS変数で管理しているなら */
-  text-decoration: line-through;
-}
+    .drag-handle {
+      cursor: grab;
+    }
 
-<style>
-  .drag-handle {
-    cursor: grab;
-    font-size: 16px;
-    margin-left: 5px;
-  }
-  .popup-menu {
-  position: absolute;
-  background: white;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  padding: 6px 8px;
-  z-index: 100;
-  display: none;
-}
+    .popup-menu {
+      position: absolute;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      padding: 4px 6px;
+      z-index: 100;
+      display: none;
+    }
 
-.popup-menu button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
-  margin: 0 4px;
-}
-.task-content > *:not(.drag-handle) {
-  pointer-events: auto;
-}
-.project, .task {
-  pointer-events: none;
-}
-.drag-handle {
-  pointer-events: auto;
-}
+    .popup-menu button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 0 3px;
+    }
 
-</style>
+    .completed-title {
+      text-decoration: line-through;
+      color: #888;
+    }
 
-
-
+    /* 余白があまりできないように補正 */
+    .project > .task-list,
+    .task > .task-list {
+      margin-bottom: 4px;
+    }
   </style>
-</head>
-
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>タスク管理サイト</title>
-  <link rel="stylesheet" href="styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 <body>
   <div id="app">
     <header>
-      <h1>タスク管理</h1>
-      <button id="addProjectBtn" title="プロジェクト追加">＋</button>
-    </header>
+  <h1>タスク管理</h1>
+  <select id="projectFilter">
+    <option value="all">すべてのプロジェクト</option>
+  </select>
+  <button id="addProjectBtn">＋</button>
+</header>
+
     <main id="projectList"></main>
   </div>
   <script src="script.js"></script>
+
 
 <script>
   let data = JSON.parse(localStorage.getItem("taskData")) || [];
@@ -141,6 +146,11 @@ const projectList = document.getElementById("projectList");
 const addProjectBtn = document.getElementById("addProjectBtn");
 
 const colors = ['#FF5722', '#4CAF50', '#2196F3', '#FFC107', '#9C27B0', '#00BCD4', '#FF9800', '#E91E63', '#795548', '#3F51B5'];
+const projectFilter = document.getElementById("projectFilter");
+
+projectFilter.addEventListener("change", () => {
+  render(); // 選択変更時に再描画
+});
 
 function saveData() {
   localStorage.setItem("taskData", JSON.stringify(data));
@@ -239,14 +249,34 @@ function togglePopupMenu(titleElem, menu) {
 }
 
 function render() {
+  const selected = projectFilter.value; // 先に現在の選択状態を保存
+
   projectList.innerHTML = "";
+
+  // フィルターセレクトの中身を再構築
+  projectFilter.innerHTML = '<option value="all">すべてのプロジェクト</option>';
   data.forEach((project, index) => {
-    const projectElem = createProjectElement(project, index);
-    projectList.appendChild(projectElem);
+    const opt = document.createElement("option");
+    opt.value = project.name;
+    opt.textContent = project.name;
+    projectFilter.appendChild(opt);
   });
 
-  initSortable(); // ここで並べ替えを毎回初期化
+  // 再描画後も選択状態を保持する
+  projectFilter.value = selected;
+
+  // 実際の表示処理
+  data.forEach((project, index) => {
+    if (selected === "all" || selected === project.name) {
+      const projectElem = createProjectElement(project, index);
+      projectList.appendChild(projectElem);
+    }
+  });
+
+  initSortable();
 }
+
+
 
 function initSortable() {
   // プロジェクトの並べ替え（最上位）
@@ -264,20 +294,22 @@ function initSortable() {
 
   // 全ての task-list に対して再帰的にSortableを初期化
   document.querySelectorAll(".task-list").forEach(list => {
-    Sortable.create(list, {
-      animation: 150,
-      onEnd: function (evt) {
-        const parentInfo = getParentInfo(list);
-        if (!parentInfo) return;
+  Sortable.create(list, {
+    animation: 150,
+    handle: ".drag-handle", // 追加：これでドラッグ可能な部分を限定
+    onEnd: function (evt) {
+      const parentInfo = getParentInfo(list);
+      if (!parentInfo) return;
 
-        const movedItem = parentInfo.children.splice(evt.oldIndex, 1)[0];
-        parentInfo.children.splice(evt.newIndex, 0, movedItem);
+      const movedItem = parentInfo.children.splice(evt.oldIndex, 1)[0];
+      parentInfo.children.splice(evt.newIndex, 0, movedItem);
 
-        saveData();
-        render();
-      }
-    });
+      saveData();
+      render();
+    }
   });
+});
+
 }
 
 function findParentArrayByPath(path) {
