@@ -129,6 +129,11 @@
   font-weight: bold;
   background-color: #fffceb;
 }
+.completed-task {
+  background-color: #d3d3d3; /* 薄いグレー */
+  color: #666; /* テキスト色も少し薄く */
+  
+}
 
 
 
@@ -517,9 +522,9 @@ if (isLeaf && !task.done) {
   dragHandle.classList.add("drag-handle");
   content.appendChild(dragHandle);
 
+    // 完了済みならクラス追加
   if (task.done) {
-    title.style.color = "#666666";
-    title.style.textDecoration = "line-through";
+    div.classList.add("completed-task");
   }
 
   const periodSpan = document.createElement("span");
