@@ -121,6 +121,10 @@
     .task > .task-list {
       margin-bottom: 4px;
     }
+	.task > .task-content > span.leaf-task {
+  text-decoration: underline;
+}
+
   </style>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
@@ -151,6 +155,7 @@ const projectFilter = document.getElementById("projectFilter");
 projectFilter.addEventListener("change", () => {
   render(); // 選択変更時に再描画
 });
+
 
 function saveData() {
   localStorage.setItem("taskData", JSON.stringify(data));
@@ -475,6 +480,10 @@ function createTaskElement(task, parent, index, color) {
 
   const title = document.createElement("span");
 title.textContent = task.name;  // 前のコードは " " + task.name でしたが空白は好みで調整してください
+// 最下層か判定（子が空またはundefinedなら最下層）
+  if (!task.children || task.children.length === 0) {
+    title.style.textDecoration = "underline";
+  }
 const popupMenu = createPopupMenu(task, parent, index, "task");
   document.body.appendChild(popupMenu);
 
