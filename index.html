@@ -71,7 +71,7 @@
       display: flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: 0px;
+      gap: 1px;
     }
 
     .task-list {
@@ -121,20 +121,6 @@
     .task > .task-list {
       margin-bottom: 4px;
     }
-	.task {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.12); /* 浮き上がり感を強調 */
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  margin-top: var(--project-margin);
-  padding: var(--task-padding);
-}
-
-.task:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.18); /* ホバー時さらに浮く */
-}
-
   </style>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
