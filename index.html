@@ -141,6 +141,29 @@
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 <body>
+	<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUrEhne67YWp_zfZpP1SblW-iwd7APm4M",
+    authDomain: "filetree-bf79a.firebaseapp.com",
+    projectId: "filetree-bf79a",
+    storageBucket: "filetree-bf79a.firebasestorage.app",
+    messagingSenderId: "809444570574",
+    appId: "1:809444570574:web:604ee10859e7e3dd3ba79f",
+    measurementId: "G-57BY7Q29SP"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
   <div id="app">
     <header>
   <h1>タスク管理</h1>
