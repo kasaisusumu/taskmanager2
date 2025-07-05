@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>タスク管理（階層構造対応）</title>
+  <title>タスク管理（クラウド対応版）</title>
   <style>
     :root {
       --bar-width: 5px;
@@ -11,736 +11,570 @@
       --task-padding: 8px;
       --indent-size: 4px;
     }
-
     body {
-      font-family: sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f7f7f7;
+      font-family: sans-serif; margin: 0; padding: 0; background: #f7f7f7;
     }
-
     #app {
-      padding: 16px;
-      max-width: 800px;
-      margin: auto;
+      padding: 16px; max-width: 800px; margin: auto;
     }
-
     header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap;
     }
-
     h1 {
-      margin: 0;
-      font-size: 1.4em;
+      margin: 0; font-size: 1.4em;
     }
-
     button {
-      cursor: pointer;
-      background-color: #4CAF50;
-      border: none;
-      color: white;
-      padding: 1px 1px;
-      border-radius: 4px;
-      font-size: 14px;
+      cursor: pointer; background-color: #4CAF50; border: none; color: white;
+      padding: 8px 12px; border-radius: 4px; font-size: 14px;
     }
-
+    button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+    }
+    #auth-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
     .project, .task {
-      background-color: white;
-      border-radius: 5px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-      position: relative;
-      margin-top: var(--project-margin);
-      padding: var(--task-padding);
+      background-color: white; border-radius: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      position: relative; margin-top: var(--project-margin); padding: var(--task-padding);
     }
-
     .bar {
-      width: var(--bar-width);
-      height: 100%;
-      position: absolute;
-      left: 0;
-      top: 0;
-      border-top-left-radius: 5px;
-      border-bottom-left-radius: 5px;
+      width: var(--bar-width); height: 100%; position: absolute; left: 0; top: 0;
+      border-top-left-radius: 5px; border-bottom-left-radius: 5px;
     }
-
     .task-content {
-      margin-left: calc(var(--bar-width) + 8px);
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1px;
+      margin-left: calc(var(--bar-width) + 8px); display: flex; align-items: center;
+      flex-wrap: wrap; gap: 1px;
     }
-
     .task-list {
-      margin-left: var(--indent-size);
-      padding-left: 2px;
-      border-left: 1px dashed #ccc;
-      margin-top: 4px;
+      margin-left: var(--indent-size); padding-left: 2px; border-left: 1px dashed #ccc; margin-top: 4px;
     }
-
     .icon-btn, .drag-handle {
-      background: none;
-      border: none;
-      font-size: 16px;
-      cursor: pointer;
+      background: none; border: none; font-size: 16px; cursor: pointer; padding: 4px;
     }
-
-    .drag-handle {
-      cursor: grab;
-    }
-
+    .drag-handle { cursor: grab; }
     .popup-menu {
-      position: absolute;
-      background: white;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      padding: 4px 6px;
-      z-index: 100;
-      display: none;
+      position: absolute; background: white; border: 1px solid #ccc; border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2); padding: 4px 6px; z-index: 100; display: none;
     }
-
     .popup-menu button {
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 16px;
-      margin: 0 3px;
+      background: none; border: none; cursor: pointer; font-size: 16px; margin: 0 3px; padding: 2px;
     }
-
-    .completed-title {
-      text-decoration: line-through;
-      color: #888;
-    }
-
-    /* 余白があまりできないように補正 */
-    .project > .task-list,
-    .task > .task-list {
-      margin-bottom: 4px;
-    }
-	.task > .task-content > span.leaf-task {
-  text-decoration: underline;
-}
-.leaf-task {
-  /* 例えば背景を明るくする・太字にするなど */
-  font-weight: bold;
-  background-color: #fffceb;
-}
-.completed-task {
-  background-color: #d3d3d3; /* 薄いグレー */
-  color: #666; /* テキスト色も少し薄く */
-  
-}
-
-
-
+    .completed-title { text-decoration: line-through; color: #888; }
+    .project > .task-list, .task > .task-list { margin-bottom: 4px; }
+    .task > .task-content > span.leaf-task { text-decoration: underline; }
+    .leaf-task { font-weight: bold; background-color: #fffceb; }
+    .completed-task { background-color: #d3d3d3; color: #666; }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 <body>
-	<script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
-
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyDUrEhne67YWp_zfZpP1SblW-iwd7APm4M",
-    authDomain: "filetree-bf79a.firebaseapp.com",
-    projectId: "filetree-bf79a",
-    storageBucket: "filetree-bf79a.firebasestorage.app",
-    messagingSenderId: "809444570574",
-    appId: "1:809444570574:web:604ee10859e7e3dd3ba79f",
-    measurementId: "G-57BY7Q29SP"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-</script>
   <div id="app">
     <header>
-  <h1>タスク管理</h1>
-  <select id="projectFilter">
-    <option value="all">すべてのプロジェクト</option>
-  </select>
-  <button id="addProjectBtn">＋</button>
-</header>
+      <h1>タスク管理</h1>
+      <div id="auth-container">
+        <span id="userInfo" style="display:none;"></span>
+        <button id="loginBtn">Googleでログイン</button>
+        <button id="logoutBtn" style="display:none;">ログアウト</button>
+      </div>
+      <select id="projectFilter">
+        <option value="all">すべてのプロジェクト</option>
+      </select>
+      <button id="addProjectBtn" disabled>＋</button>
+    </header>
 
     <main id="projectList"></main>
   </div>
-  <script src="script.js"></script>
 
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
-<script>
-  let data = JSON.parse(localStorage.getItem("taskData")) || [];
-
-const projectList = document.getElementById("projectList");
-const addProjectBtn = document.getElementById("addProjectBtn");
-
-const colors = ['#FF5722', '#4CAF50', '#2196F3', '#FFC107', '#9C27B0', '#00BCD4', '#FF9800', '#E91E63', '#795548', '#3F51B5'];
-const projectFilter = document.getElementById("projectFilter");
-
-projectFilter.addEventListener("change", () => {
-  render(); // 選択変更時に再描画
-});
-
-
-function saveData() {
-  localStorage.setItem("taskData", JSON.stringify(data));
-}
-function createPopupMenu(taskOrProject, parent, index, type) {
-  // type: "project" or "task"
-  const menu = document.createElement("div");
-  menu.className = "popup-menu";
-
-  // 編集ボタン
-  const editBtn = document.createElement("button");
-  editBtn.textContent = "✏️";
-  editBtn.title = "編集";
-  editBtn.onclick = (e) => {
-    e.stopPropagation();
-    const newName = prompt((type === "project" ? "プロジェクト" : "タスク") + "名を編集:", taskOrProject.name);
-    if (newName) {
-      taskOrProject.name = newName;
-      saveData();
-      render();
-    }
-    closePopupMenus();
-  };
-  menu.appendChild(editBtn);
-
-  // カレンダーボタン（期間編集がある場合）
-  if (type === "task") {
-    const periodBtn = document.createElement("button");
-    periodBtn.textContent = "📅";
-    periodBtn.title = "期間編集";
-    periodBtn.onclick = (e) => {
-      e.stopPropagation();
-      showPeriodEditDialog(taskOrProject);
-      closePopupMenus();
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  
+  <script>
+    // ===================================================
+    // 1. Firebaseの初期化 ✨重要✨
+    // ===================================================
+    const firebaseConfig = {
+      // ↓↓↓ ここにFirebaseコンソールで取得した自分の設定情報を貼り付けてください ↓↓↓
+      apiKey: "AIzaSyDUrEhne67YWp_zfZpP1SblW-iwd7APm4M",
+  authDomain: "filetree-bf79a.firebaseapp.com",
+  projectId: "filetree-bf79a",
+  storageBucket: "filetree-bf79a.firebasestorage.app",
+  messagingSenderId: "809444570574",
+  appId: "1:809444570574:web:604ee10859e7e3dd3ba79f",
+  measurementId: "G-57BY7Q29SP"
+      // ↑↑↑ ここまで ↑↑↑
     };
-    menu.appendChild(periodBtn);
-  }
 
-  // コメントボタン
-  const commentBtn = document.createElement("button");
-  commentBtn.textContent = "💬";
-  commentBtn.title = "コメント";
-  commentBtn.onclick = (e) => {
-    e.stopPropagation();
-    const newComment = prompt("コメント:", taskOrProject.comment || "");
-    if (newComment !== null) {
-      taskOrProject.comment = newComment;
-      saveData();
-      render();
-    }
-    closePopupMenus();
-  };
-  menu.appendChild(commentBtn);
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const googleProvider = new firebase.auth.GoogleAuthProvider();
 
-  // ゴミ箱（削除）ボタン
-  const deleteBtn = document.createElement("button");
-  deleteBtn.textContent = "🗑️";
-  deleteBtn.title = "削除";
-  deleteBtn.onclick = (e) => {
-    e.stopPropagation();
-    if (confirm("本当に削除しますか？")) {
-      if (type === "project") {
-        data.splice(index, 1);
-      } else if (type === "task") {
-        parent.children.splice(index, 1);
-      }
-      saveData();
-      render();
-    }
-    closePopupMenus();
-  };
-  menu.appendChild(deleteBtn);
+    let data = [];
+    let currentUser = null;
 
-  return menu;
-}
-// 開いているポップアップを閉じる
-function closePopupMenus() {
-  document.querySelectorAll(".popup-menu").forEach(menu => {
-    menu.style.display = "none";
-  });
-}
+    // ===================================================
+    // 2. DOM要素の取得
+    // ===================================================
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const userInfo = document.getElementById("userInfo");
+    const projectList = document.getElementById("projectList");
+    const addProjectBtn = document.getElementById("addProjectBtn");
+    const projectFilter = document.getElementById("projectFilter");
 
-// ポップアップをタイトルの横に表示する関数
-function togglePopupMenu(titleElem, menu) {
-  if (menu.style.display === "block") {
-    menu.style.display = "none";
-  } else {
-    closePopupMenus();
+    const colors = ['#FF5722', '#4CAF50', '#2196F3', '#FFC107', '#9C27B0', '#00BCD4', '#FF9800', '#E91E63', '#795548', '#3F51B5'];
+    
+    // ===================================================
+    // 3. 認証処理
+    // ===================================================
+    loginBtn.onclick = () => auth.signInWithPopup(googleProvider);
+    logoutBtn.onclick = () => auth.signOut();
 
-    // 表示位置をタイトルのすぐ右に調整
-    const rect = titleElem.getBoundingClientRect();
-    menu.style.top = (window.scrollY + rect.bottom + 4) + "px";
-    menu.style.left = (window.scrollX + rect.left) + "px";
-    menu.style.display = "block";
-  }
-}
-
-function render() {
-  const selected = projectFilter.value; // 先に現在の選択状態を保存
-
-  projectList.innerHTML = "";
-
-  // フィルターセレクトの中身を再構築
-  projectFilter.innerHTML = '<option value="all">すべてのプロジェクト</option>';
-  data.forEach((project, index) => {
-    const opt = document.createElement("option");
-    opt.value = project.name;
-    opt.textContent = project.name;
-    projectFilter.appendChild(opt);
-  });
-
-  // 再描画後も選択状態を保持する
-  projectFilter.value = selected;
-
-  // 実際の表示処理
-  data.forEach((project, index) => {
-    if (selected === "all" || selected === project.name) {
-      const projectElem = createProjectElement(project, index);
-      projectList.appendChild(projectElem);
-    }
-  });
-
-  initSortable();
-}
-
-
-
-function initSortable() {
-  // プロジェクトの並べ替え（最上位）
-  Sortable.create(projectList, {
-  animation: 150,
-  handle: ".drag-handle", // ← ここで掴む場所を指定
-  onEnd: function (evt) {
-    const [moved] = data.splice(evt.oldIndex, 1);
-    data.splice(evt.newIndex, 0, moved);
-    saveData();
-    render(); // ← ここで再描画されても順番は保持されてる
-  }
-});
-
-
-  // 全ての task-list に対して再帰的にSortableを初期化
-  document.querySelectorAll(".task-list").forEach(list => {
-  Sortable.create(list, {
-    animation: 150,
-    handle: ".drag-handle", // 追加：これでドラッグ可能な部分を限定
-    onEnd: function (evt) {
-      const parentInfo = getParentInfo(list);
-      if (!parentInfo) return;
-
-      const movedItem = parentInfo.children.splice(evt.oldIndex, 1)[0];
-      parentInfo.children.splice(evt.newIndex, 0, movedItem);
-
-      saveData();
-      render();
-    }
-  });
-});
-
-}
-
-function findParentArrayByPath(path) {
-  const indices = path.split('-').map(Number);
-  indices.pop(); // 自分自身のインデックスを除く → 親の配列を取得するため
-  let current = data;
-  for (const i of indices) {
-    if (!current[i]) return null;
-    current = current[i].children;
-  }
-  return current;
-}
-
-
-
-function getParentInfo(listElem) {
-  // listElemの親divの task-content > span のテキストを取得
-  const parentContent = listElem.parentElement.querySelector(".task-content > span");
-  const parentName = parentContent?.textContent?.trim();
-  if (!parentName) return null;
-
-  function findRecursive(nodes, targetName) {
-    for (const node of nodes) {
-      if (node.name === targetName) {
-        return { parent: node, children: node.children || [] };
-      }
-      if (node.children && node.children.length) {
-        const res = findRecursive(node.children, targetName);
-        if (res) return res;
-      }
-    }
-    return null;
-  }
-
-  return findRecursive(data, parentName);
-}
-
-
-function enableSortable() {
-  document.querySelectorAll(".task-list").forEach(list => {
-    Sortable.create(list, {
-      animation: 150,
-      onEnd: function (evt) {
-        const listElem = evt.from;
-        const info = getParentInfo(listElem);
-        if (!info) return;
-
-        const movedItem = info.children.splice(evt.oldIndex, 1)[0];
-        info.children.splice(evt.newIndex, 0, movedItem);
-
-        render(); // 並び替え後に再描画
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        currentUser = user;
+        loginBtn.style.display = "none";
+        logoutBtn.style.display = "inline-block";
+        userInfo.textContent = `${user.displayName} でログイン中`;
+        userInfo.style.display = "inline";
+        addProjectBtn.disabled = false;
+        loadData();
+      } else {
+        currentUser = null;
+        loginBtn.style.display = "inline-block";
+        logoutBtn.style.display = "none";
+        userInfo.style.display = "none";
+        addProjectBtn.disabled = true;
+        data = [];
+        render();
       }
     });
-  });
-}
 
+    // ===================================================
+    // 4. データ保存・読込処理 (Firestore)
+    // ===================================================
+    async function loadData() {
+      if (!currentUser) return;
+      const docRef = db.collection("users").doc(currentUser.uid);
+      const doc = await docRef.get();
 
-
-function createProjectElement(project, index) {
-  const div = document.createElement("div");
-  div.className = "project";
-  
-
-  const bar = document.createElement("div");
-  bar.className = "bar";
-  bar.style.backgroundColor = project.color || colors[0];
-
-  const content = document.createElement("div");
-  content.className = "task-content";
-
-  const title = document.createElement("span");
-  title.textContent = project.name;
-  
-const dragHandle = createIconButton("↕️");
-dragHandle.classList.add("drag-handle"); // このclassでhandle指定する
-content.appendChild(dragHandle);
-
-const popupMenu = createPopupMenu(project, null, index, "project");
-  document.body.appendChild(popupMenu);
-
-  title.addEventListener("click", (e) => {
-    e.stopPropagation();
-    togglePopupMenu(title, popupMenu);
-  });
-
-  const editBtn = createIconButton("✏️", () => {
-    const newName = prompt("プロジェクト名を編集:", project.name);
-    if (newName) {
-      project.name = newName;
-      saveData();
+      if (doc.exists && doc.data().tasks) {
+        data = doc.data().tasks;
+      } else {
+        data = [];
+      }
       render();
     }
-  });
 
-  const deleteBtn = createIconButton("🗑️", () => {
-    if (confirm("本当に削除しますか？")) {
-      data.splice(index, 1);
-      saveData();
-      render();
+    function saveData() {
+      if (!currentUser) return;
+      db.collection("users").doc(currentUser.uid).set({ tasks: data })
+        .catch(error => {
+          console.error("データの保存に失敗しました: ", error);
+          alert("データの保存に失敗しました。");
+        });
     }
-  });
 
-  const addSubBtn = createIconButton("➕", () => {
-    const name = prompt("小プロジェクト/タスク名:");
-    if (name) {
-      if (!project.children) project.children = [];
-      project.children.push({ name, children: [], comment: "", done: false });
-      saveData();
-      render();
+    // ===================================================
+    // 5. アプリケーションのコア機能 (元のコード)
+    // ===================================================
+    projectFilter.addEventListener("change", () => render());
+
+    function createPopupMenu(taskOrProject, parent, index, type) {
+      const menu = document.createElement("div");
+      menu.className = "popup-menu";
+
+      const editBtn = document.createElement("button");
+      editBtn.textContent = "✏️";
+      editBtn.title = "編集";
+      editBtn.onclick = (e) => {
+        e.stopPropagation();
+        const newName = prompt((type === "project" ? "プロジェクト" : "タスク") + "名を編集:", taskOrProject.name);
+        if (newName) {
+          taskOrProject.name = newName;
+          saveData();
+          render();
+        }
+        closePopupMenus();
+      };
+      menu.appendChild(editBtn);
+
+      if (type === "task") {
+        const periodBtn = document.createElement("button");
+        periodBtn.textContent = "📅";
+        periodBtn.title = "期間編集";
+        periodBtn.onclick = (e) => {
+          e.stopPropagation();
+          showPeriodEditDialog(taskOrProject);
+          closePopupMenus();
+        };
+        menu.appendChild(periodBtn);
+      }
+
+      const commentBtn = document.createElement("button");
+      commentBtn.textContent = "💬";
+      commentBtn.title = "コメント";
+      commentBtn.onclick = (e) => {
+        e.stopPropagation();
+        const newComment = prompt("コメント:", taskOrProject.comment || "");
+        if (newComment !== null) {
+          taskOrProject.comment = newComment;
+          saveData();
+          render();
+        }
+        closePopupMenus();
+      };
+      menu.appendChild(commentBtn);
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.textContent = "🗑️";
+      deleteBtn.title = "削除";
+      deleteBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (confirm("本当に削除しますか？")) {
+          if (type === "project") {
+            data.splice(index, 1);
+          } else if (type === "task") {
+            parent.children.splice(index, 1);
+          }
+          saveData();
+          render();
+        }
+        closePopupMenus();
+      };
+      menu.appendChild(deleteBtn);
+
+      return menu;
     }
-  });
 
-  const colorBtn = createIconButton("🎨", () => {
-    const newColor = prompt("0〜9の色番号を入力:\n" + colors.map((c, i) => `${i}: ${c}`).join("\n"));
-    const idx = parseInt(newColor);
-    if (!isNaN(idx) && colors[idx]) {
-      project.color = colors[idx];
-      saveData();
-      render();
+    function closePopupMenus() {
+      document.querySelectorAll(".popup-menu").forEach(menu => menu.style.display = "none");
     }
-  });
 
- 
-  content.appendChild(colorBtn);
-   content.appendChild(title);
-   content.appendChild(addSubBtn);
-
-  div.appendChild(bar);
-  div.appendChild(content);
-
-  // createProjectElement の中
-if (project.children) {
-  const ul = document.createElement("div");
-  ul.className = "task-list";  // ← ここにクラス名を付けている
-  project.children.forEach((child, childIndex) => {
-    ul.appendChild(createTaskElement(child, project, childIndex, project.color));
-  });
-  div.appendChild(ul);
-}
-
-  return div;
-}
-
-function createTaskElement(task, parent, index, color) {
-  const div = document.createElement("div");
-  div.className = "task";
-
-  const isLeaf = !task.children || task.children.length === 0;
-if (isLeaf && !task.done) {
-  div.classList.add("leaf-task");  // 最下層かつ未完了なら追加
-}
-
-
-  const bar = document.createElement("div");
-  bar.className = "bar";
-  bar.style.backgroundColor = color;
-
-  const content = document.createElement("div");
-  content.className = "task-content";
-
-  const checkbox = document.createElement("input");
-  checkbox.type = "checkbox";
-  checkbox.checked = task.done;
-  checkbox.onchange = () => {
-  task.done = checkbox.checked;
-
-  // 最下層かつ未完了なら leaf-task クラスを追加、それ以外は外す
-  if (isLeaf) {
-    if (!task.done) {
-      div.classList.add("leaf-task");
-    } else {
-      div.classList.remove("leaf-task");
+    function togglePopupMenu(titleElem, menu) {
+      if (menu.style.display === "block") {
+        menu.style.display = "none";
+      } else {
+        closePopupMenus();
+        const rect = titleElem.getBoundingClientRect();
+        menu.style.top = (window.scrollY + rect.bottom + 4) + "px";
+        menu.style.left = (window.scrollX + rect.left) + "px";
+        menu.style.display = "block";
+      }
     }
-  }
 
-  checkAutoComplete(task, parent);
-  saveData();
-  render();
-};
+    function render() {
+      const selected = projectFilter.value;
+      projectList.innerHTML = "";
+      document.querySelectorAll('.popup-menu').forEach(menu => menu.remove());
 
+      projectFilter.innerHTML = '<option value="all">すべてのプロジェクト</option>';
+      data.forEach(project => {
+        const opt = document.createElement("option");
+        opt.value = project.name;
+        opt.textContent = project.name;
+        projectFilter.appendChild(opt);
+      });
+      projectFilter.value = selected;
 
-  const title = document.createElement("span");
-  title.textContent = task.name;
+      data.forEach((project, index) => {
+        if (selected === "all" || selected === project.name) {
+          const projectElem = createProjectElement(project, index);
+          projectList.appendChild(projectElem);
+        }
+      });
+      initSortable();
+    }
 
-  const popupMenu = createPopupMenu(task, parent, index, "task");
-  document.body.appendChild(popupMenu);
-  title.addEventListener("click", (e) => {
-    e.stopPropagation();
-    togglePopupMenu(title, popupMenu);
-  });
+    function initSortable() {
+      Sortable.create(projectList, {
+        animation: 150,
+        handle: ".drag-handle",
+        onEnd: function (evt) {
+          const [moved] = data.splice(evt.oldIndex, 1);
+          data.splice(evt.newIndex, 0, moved);
+          saveData();
+          render();
+        }
+      });
 
-  const dragHandle = createIconButton("↕️");
-  dragHandle.classList.add("drag-handle");
-  content.appendChild(dragHandle);
+      document.querySelectorAll(".task-list").forEach(list => {
+        if (list.sortable) list.sortable.destroy();
+        Sortable.create(list, {
+          animation: 150,
+          handle: ".drag-handle",
+          onEnd: function (evt) {
+            const parentInfo = getParentInfoByElement(list);
+            if (!parentInfo) return;
+            const [movedItem] = parentInfo.children.splice(evt.oldIndex, 1);
+            parentInfo.children.splice(evt.newIndex, 0, movedItem);
+            saveData();
+            render();
+          }
+        });
+      });
+    }
 
-    // 完了済みならクラス追加
-  if (task.done) {
-    div.classList.add("completed-task");
-  }
+    function getParentInfoByElement(listElem) {
+        const parentElement = listElem.closest('.project, .task');
+        if (!parentElement) return null;
+        const parentName = parentElement.querySelector(".task-content > span").textContent.trim();
 
-  const periodSpan = document.createElement("span");
-  periodSpan.style.fontSize = "12px";
-  periodSpan.style.color = "#666";
-  periodSpan.style.marginLeft = "6px";
-  if (task.startDate && task.endDate) {
-    const formatDate = (d) => {
-      const dt = new Date(d);
-      if (isNaN(dt)) return "";
-      return `${dt.getMonth() + 1}/${dt.getDate()}`;
+        function findRecursive(nodes, targetName) {
+            for (const node of nodes) {
+                if (node.name === targetName) {
+                    return { parent: node, children: node.children || [] };
+                }
+                if (node.children) {
+                    const res = findRecursive(node.children, targetName);
+                    if (res) return res;
+                }
+            }
+            return null;
+        }
+        
+        let rootNode = data.find(p => p.name === parentName);
+        if (rootNode) return { parent: rootNode, children: rootNode.children || [] };
+
+        return findRecursive(data, parentName);
+    }
+
+    function createIconButton(icon, action) {
+      const btn = document.createElement("button");
+      btn.className = "icon-btn";
+      btn.innerHTML = icon;
+      btn.onclick = (e) => {
+          e.stopPropagation();
+          action();
+      };
+      return btn;
+    }
+
+    function createProjectElement(project, index) {
+      const div = document.createElement("div");
+      div.className = "project";
+
+      const bar = document.createElement("div");
+      bar.className = "bar";
+      bar.style.backgroundColor = project.color || colors[0];
+
+      const content = document.createElement("div");
+      content.className = "task-content";
+
+      const dragHandle = createIconButton("↕️", () => {});
+      dragHandle.classList.add("drag-handle");
+      
+      const title = document.createElement("span");
+      title.textContent = project.name;
+      
+      const popupMenu = createPopupMenu(project, null, index, "project");
+      document.body.appendChild(popupMenu);
+      title.addEventListener("click", (e) => {
+          e.stopPropagation();
+          togglePopupMenu(title, popupMenu);
+      });
+
+      const addSubBtn = createIconButton("➕", () => {
+        const name = prompt("小プロジェクト/タスク名:");
+        if (name) {
+          if (!project.children) project.children = [];
+          project.children.push({ name, children: [], comment: "", done: false, startDate: "", endDate: "" });
+          saveData();
+          render();
+        }
+      });
+      
+      const colorBtn = createIconButton("🎨", () => {
+          const newColor = prompt("0〜9の色番号を入力:\n" + colors.map((c, i) => `${i}: ${c}`).join("\n"));
+          const idx = parseInt(newColor);
+          if (!isNaN(idx) && colors[idx]) {
+              project.color = colors[idx];
+              saveData();
+              render();
+          }
+      });
+
+      content.appendChild(dragHandle);
+      content.appendChild(title);
+      content.appendChild(addSubBtn);
+      content.appendChild(colorBtn);
+      
+      div.appendChild(bar);
+      div.appendChild(content);
+
+      if (project.children) {
+        const ul = document.createElement("div");
+        ul.className = "task-list";
+        project.children.forEach((child, childIndex) => {
+          ul.appendChild(createTaskElement(child, project, childIndex, project.color));
+        });
+        div.appendChild(ul);
+      }
+      return div;
+    }
+
+    function createTaskElement(task, parent, index, color) {
+      const div = document.createElement("div");
+      div.className = "task";
+      if (task.done) div.classList.add("completed-task");
+
+      const isLeaf = !task.children || task.children.length === 0;
+      if (isLeaf && !task.done) {
+        div.classList.add("leaf-task");
+      }
+
+      const bar = document.createElement("div");
+      bar.className = "bar";
+      bar.style.backgroundColor = color;
+
+      const content = document.createElement("div");
+      content.className = "task-content";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = task.done;
+      checkbox.onclick = (e) => e.stopPropagation();
+      checkbox.onchange = () => {
+        task.done = checkbox.checked;
+        checkAutoComplete(task, parent);
+        saveData();
+        render();
+      };
+      
+      const dragHandle = createIconButton("↕️", () => {});
+      dragHandle.classList.add("drag-handle");
+      
+      const title = document.createElement("span");
+      title.textContent = task.name;
+      const popupMenu = createPopupMenu(task, parent, index, "task");
+      document.body.appendChild(popupMenu);
+      title.addEventListener("click", (e) => {
+        e.stopPropagation();
+        togglePopupMenu(title, popupMenu);
+      });
+      
+      const periodSpan = document.createElement("span");
+      periodSpan.style.fontSize = "12px";
+      periodSpan.style.color = "#666";
+      periodSpan.style.marginLeft = "6px";
+      if (task.startDate && task.endDate) {
+        const formatDate = (d) => new Date(d).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+        periodSpan.textContent = `(${formatDate(task.startDate)}~${formatDate(task.endDate)})`;
+      }
+
+      const addSubBtn = createIconButton("➕", () => {
+        const name = prompt("タスク名:");
+        if (name) {
+          if (!task.children) task.children = [];
+          task.children.push({ name, children: [], comment: "", done: false, startDate: "", endDate: "" });
+          saveData();
+          render();
+        }
+      });
+      
+      const commentLine = document.createElement("div");
+      commentLine.style.fontSize = "12px";
+      commentLine.style.color = "#666";
+      commentLine.textContent = task.comment?.split("\n")[0] || "";
+      
+      content.appendChild(dragHandle);
+      content.appendChild(checkbox);
+      content.appendChild(title);
+      content.appendChild(periodSpan);
+      content.appendChild(addSubBtn);
+      content.appendChild(commentLine);
+
+      div.appendChild(bar);
+      div.appendChild(content);
+
+      if (task.children?.length) {
+        const ul = document.createElement("div");
+        ul.className = "task-list";
+        task.children.forEach((child, childIndex) => {
+          ul.appendChild(createTaskElement(child, task, childIndex, color));
+        });
+        div.appendChild(ul);
+      }
+      return div;
+    }
+    
+    function showPeriodEditDialog(task) {
+        const modalBg = document.createElement("div");
+        Object.assign(modalBg.style, {
+            position: "fixed", top: "0", left: "0", width: "100%", height: "100%",
+            backgroundColor: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center",
+            justifyContent: "center", zIndex: "9999"
+        });
+
+        const modal = document.createElement("div");
+        Object.assign(modal.style, {
+            backgroundColor: "white", padding: "16px", borderRadius: "8px",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.2)", minWidth: "280px"
+        });
+
+        modal.innerHTML = `
+            <h3>期間を選択</h3>
+            <label style="display: block; margin-top: 8px;">開始日:
+                <input type="date" id="startDateInput" value="${task.startDate || ''}">
+            </label>
+            <label style="display: block; margin-top: 8px;">終了日:
+                <input type="date" id="endDateInput" value="${task.endDate || ''}">
+            </label>
+            <div style="margin-top: 12px; text-align: right;">
+                <button id="cancelBtn" style="margin-right: 8px; background-color: #777;">キャンセル</button>
+                <button id="okBtn">OK</button>
+            </div>
+        `;
+
+        modalBg.appendChild(modal);
+        document.body.appendChild(modalBg);
+        
+        modal.querySelector("#okBtn").onclick = () => {
+            const start = modal.querySelector("#startDateInput").value;
+            const end = modal.querySelector("#endDateInput").value;
+            if (start && end && start > end) {
+                alert("開始日は終了日以前を選択してください。");
+                return;
+            }
+            task.startDate = start || "";
+            task.endDate = end || "";
+            saveData();
+            render();
+            document.body.removeChild(modalBg);
+        };
+
+        modal.querySelector("#cancelBtn").onclick = () => {
+            document.body.removeChild(modalBg);
+        };
+    }
+
+    function checkAutoComplete(task, parent) {
+      if (!parent || !parent.children) return;
+      const allDone = parent.children.every(t => t.done);
+      parent.done = allDone;
+    }
+
+    addProjectBtn.onclick = () => {
+      const name = prompt("プロジェクト名:");
+      if (name) {
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        data.push({ name, children: [], color });
+        saveData();
+        render();
+      }
     };
-    periodSpan.textContent = `(${formatDate(task.startDate)}~${formatDate(task.endDate)})`;
-  }
 
-  const commentLine = document.createElement("div");
-  commentLine.style.fontSize = "12px";
-  commentLine.style.color = "#666";
-  commentLine.textContent = task.comment?.split("\n")[0] || "";
-
-  const commentBtn = createIconButton("💬", () => {
-    const newComment = prompt("コメント:", task.comment || "");
-    if (newComment != null) {
-      task.comment = newComment;
-      saveData();
-      render();
-    }
-  });
-
-  const periodBtn = createIconButton("📅", () => {
-    showPeriodEditDialog(task);
-  });
-
-  const addSubBtn = createIconButton("➕", () => {
-    const name = prompt("タスク名:");
-    if (name) {
-      if (!task.children) task.children = [];
-      task.children.push({ name, children: [], comment: "", done: false });
-      saveData();
-      render();
-    }
-  });
-
-  const editBtn = createIconButton("✏️", () => {
-    const newName = prompt("タスク名を編集:", task.name);
-    if (newName) {
-      task.name = newName;
-      saveData();
-      render();
-    }
-  });
-
-  const deleteBtn = createIconButton("🗑️", () => {
-    if (confirm("本当に削除しますか？")) {
-      parent.children.splice(index, 1);
-      saveData();
-      render();
-    }
-  });
-
-  content.appendChild(checkbox);
-  content.appendChild(title);
-  content.appendChild(periodSpan);
-  content.appendChild(addSubBtn);
-  content.appendChild(commentLine);
-
-  div.appendChild(bar);
-  div.appendChild(content);
-
-  if (task.children?.length) {
-    const ul = document.createElement("div");
-    ul.className = "task-list";
-    task.children.forEach((child, childIndex) => {
-      ul.appendChild(createTaskElement(child, task, childIndex, color));
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.popup-menu') && !e.target.closest('.task-content span')) {
+            closePopupMenus();
+        }
     });
-    div.appendChild(ul);
-  }
 
-  return div;
-}
-
-function showPeriodEditDialog(task) {
-  // モーダル背景
-  const modalBg = document.createElement("div");
-  modalBg.style.position = "fixed";
-  modalBg.style.top = "0";
-  modalBg.style.left = "0";
-  modalBg.style.width = "100%";
-  modalBg.style.height = "100%";
-  modalBg.style.backgroundColor = "rgba(0,0,0,0.3)";
-  modalBg.style.display = "flex";
-  modalBg.style.alignItems = "center";
-  modalBg.style.justifyContent = "center";
-  modalBg.style.zIndex = "9999";
-
-  // モーダル本体
-  const modal = document.createElement("div");
-  modal.style.backgroundColor = "white";
-  modal.style.padding = "16px";
-  modal.style.borderRadius = "8px";
-  modal.style.boxShadow = "0 2px 10px rgba(0,0,0,0.2)";
-  modal.style.minWidth = "280px";
-
-  const title = document.createElement("h3");
-  title.textContent = "期間を選択";
-
-  const startLabel = document.createElement("label");
-  startLabel.textContent = "開始日:";
-  startLabel.style.display = "block";
-  startLabel.style.marginTop = "8px";
-
-  const startInput = document.createElement("input");
-  startInput.type = "date";
-  startInput.value = task.startDate || "";
-
-  const endLabel = document.createElement("label");
-  endLabel.textContent = "終了日:";
-  endLabel.style.display = "block";
-  endLabel.style.marginTop = "8px";
-
-  const endInput = document.createElement("input");
-  endInput.type = "date";
-  endInput.value = task.endDate || "";
-
-  // ボタン
-  const btnContainer = document.createElement("div");
-  btnContainer.style.marginTop = "12px";
-  btnContainer.style.textAlign = "right";
-
-  const cancelBtn = document.createElement("button");
-  cancelBtn.textContent = "キャンセル";
-  cancelBtn.style.marginRight = "8px";
-
-  const okBtn = document.createElement("button");
-  okBtn.textContent = "OK";
-
-  cancelBtn.onclick = () => {
-    document.body.removeChild(modalBg);
-  };
-
-  okBtn.onclick = () => {
-    // 簡単な日付チェック（開始日 <= 終了日）
-    if (startInput.value && endInput.value && startInput.value > endInput.value) {
-      alert("開始日は終了日以前を選択してください。");
-      return;
-    }
-    task.startDate = startInput.value || "";
-    task.endDate = endInput.value || "";
-    saveData();
-    render();
-    document.body.removeChild(modalBg);
-  };
-
-  btnContainer.appendChild(cancelBtn);
-  btnContainer.appendChild(okBtn);
-
-  modal.appendChild(title);
-  modal.appendChild(startLabel);
-  modal.appendChild(startInput);
-  modal.appendChild(endLabel);
-  modal.appendChild(endInput);
-  modal.appendChild(btnContainer);
-
-  modalBg.appendChild(modal);
-  document.body.appendChild(modalBg);
-}
-
-function checkAutoComplete(task, parent) {
-  if (!parent || !parent.children) return;
-  const allDone = parent.children.every(t => t.done);
-  if (allDone) parent.done = true;
-  else parent.done = false;
-}
-
-function createIconButton(icon, action) {
-  const btn = document.createElement("button");
-  btn.className = "icon-btn";
-  btn.innerText = icon;
-  btn.onclick = action;
-  return btn;
-}
-
-addProjectBtn.onclick = () => {
-  const name = prompt("プロジェクト名:");
-  if (name) {
-    const color = colors[Math.floor(Math.random() * colors.length)];
-    data.push({ name, children: [], color });
-    saveData();
-    render();
-  }
-};
-
-render();
-</script>
+  </script>
 </body>
 </html>
