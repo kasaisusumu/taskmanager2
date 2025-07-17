@@ -3,551 +3,898 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>タスク管理（クラウド対応版）</title>
+  <title>タスク管理（階層構造・タイムライン対応）</title>
   <style>
     :root {
-      --bar-width: 5px; --project-margin: 6px; --task-padding: 8px; --indent-size: 4px;
+      --bar-width: 5px;
+      --project-margin: 6px;
+      --task-padding: 8px;
+      --indent-size: 4px;
     }
-    body {
-      font-family: sans-serif; margin: 0; padding: 0; background: #f7f7f7;
-    }
-    #app {
-      padding: 16px; max-width: 800px; margin: auto;
-    }
-    header {
-      display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap;
-    }
-    h1 {
-      margin: 0; font-size: 1.4em;
-    }
-    button {
-      cursor: pointer; background-color: #4CAF50; border: none; color: white;
-      padding: 8px 12px; border-radius: 4px; font-size: 14px;
-    }
-    button:disabled { background-color: #ccc; cursor: not-allowed; }
-    #auth-container { display: flex; align-items: center; gap: 8px; }
 
-    /* ▼▼▼ 追加したスタイル ▼▼▼ */
-    #userPhoto {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        vertical-align: middle;
-        margin-right: 8px;
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f7f7f7;
     }
-    #changeAccountBtn {
-        background-color: #f0ad4e; /* 少し色を変えて区別 */
+
+    #app {
+      padding: 16px;
+      max-width: 800px;
+      margin: auto;
     }
-    /* ▲▲▲ 追加したスタイル ▲▲▲ */
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.4em;
+    }
+
+    button {
+      cursor: pointer;
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+     #addProjectBtn{
+        padding: 1px 1px;
+     }
 
     .project, .task {
-      background-color: white; border-radius: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-      position: relative; margin-top: var(--project-margin); padding: var(--task-padding);
+      background-color: white;
+      border-radius: 5px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      position: relative;
+      margin-top: var(--project-margin);
+      padding: var(--task-padding);
     }
+
     .bar {
-      width: var(--bar-width); height: 100%; position: absolute; left: 0; top: 0;
-      border-top-left-radius: 5px; border-bottom-left-radius: 5px;
+      width: var(--bar-width);
+      height: 100%;
+      position: absolute;
+      left: 0;
+      top: 0;
+      border-top-left-radius: 5px;
+      border-bottom-left-radius: 5px;
     }
+
     .task-content {
-      margin-left: calc(var(--bar-width) + 8px); display: flex; align-items: center;
-      flex-wrap: wrap; gap: 1px;
+      margin-left: calc(var(--bar-width) + 8px);
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1px;
     }
+
     .task-list {
-      margin-left: var(--indent-size); padding-left: 2px; border-left: 1px dashed #ccc; margin-top: 4px;
+      margin-left: var(--indent-size);
+      padding-left: 2px;
+      border-left: 1px dashed #ccc;
+      margin-top: 4px;
     }
+
     .icon-btn, .drag-handle {
-      background: none; border: none; font-size: 16px; cursor: pointer; padding: 4px;
+      background: none;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 4px;
     }
-    .drag-handle { cursor: grab; }
+
+    .drag-handle {
+      cursor: grab;
+    }
+
     .popup-menu {
-      position: absolute; background: white; border: 1px solid #ccc; border-radius: 6px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2); padding: 4px 6px; z-index: 100; display: none;
+      position: absolute;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      padding: 4px 6px;
+      z-index: 100;
+      display: none;
     }
+
     .popup-menu button {
-      background: none; border: none; cursor: pointer; font-size: 16px; margin: 0 3px; padding: 2px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 0 3px;
+      padding: 2px;
+      color: #333;
     }
-    .completed-title { text-decoration: line-through; color: #888; }
-    .project > .task-list, .task > .task-list { margin-bottom: 4px; }
-    .task > .task-content > span.leaf-task { text-decoration: underline; }
-    .leaf-task { font-weight: bold; background-color: #fffceb; }
-    .completed-task { background-color: #d3d3d3; color: #666; }
+
+    .completed-title {
+      text-decoration: line-through;
+      color: #888;
+    }
+
+    .project > .task-list,
+    .task > .task-list {
+      margin-bottom: 4px;
+    }
+    .task > .task-content > span.leaf-task {
+      text-decoration: underline;
+    }
+    .leaf-task {
+      font-weight: bold;
+      background-color: #fffceb;
+    }
+    .completed-task {
+      background-color: #f0f0f0;
+      color: #888;
+    }
+    .completed-task .task-content span {
+        text-decoration: line-through;
+    }
+
+
+    /* --- タイムライン用スタイル --- */
+    #timelineView {
+      display: none;
+      display: flex;
+      gap: 16px;
+    }
+    .timeline-column {
+      flex: 1;
+      min-width: 0;
+      position: relative;
+      padding-top: 8px;
+    }
+    .timeline-column h2 {
+        font-size: 1.1em;
+        margin-top: 0;
+        color: #555;
+        border-bottom: 2px solid #eee;
+        padding-bottom: 8px;
+    }
+
+    /* ★★★ 変更点: 区切り線のつかみ判定を大きくするためのハンドル ★★★ */
+    .timeline-separator-handle {
+        position: absolute;
+        width: calc(100% - 15px);
+        height: 12px; /* つかむ判定エリアの高さ */
+        cursor: ns-resize;
+        z-index: 50;
+        /* Y座標の中央にハンドルが来るように-50%ずらす */
+        transform: translateY(-50%);
+    }
+
+    /* ★★★ 変更点: 実際に表示される赤い線 ★★★ */
+    .timeline-separator-line {
+        position: absolute;
+        width: 100%;
+        height: 2px;
+        background-color: red;
+        top: 50%; /* ハンドルの中央に配置 */
+        left: 0;
+        transform: translateY(-50%);
+        pointer-events: none; /* 線自身はクリックイベントを拾わないようにする */
+    }
+
+
+    .timeline-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background-color: white;
+        padding: 10px 15px;
+        margin-bottom: 8px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        border-radius: 4px;
+        transition: background-color 0.3s;
+    }
+    .timeline-item.is-done {
+        background-color: #f0f0f0;
+    }
+    .timeline-item.is-done .timeline-item-header {
+        text-decoration: line-through;
+        color: #888;
+    }
+    .timeline-item-content {
+        flex-grow: 1;
+        border-left: 5px solid;
+        padding-left: 10px;
+    }
+    .timeline-item-header {
+        font-weight: bold;
+        font-size: 1.1em;
+        margin-bottom: 4px;
+        cursor: pointer;
+    }
+    .timeline-item-meta {
+        font-size: 0.9em;
+        color: #555;
+    }
+    .timeline-item-meta strong {
+        color: #333;
+    }
+    .timeline-item input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+        cursor: default;
+    }
+
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 <body>
   <div id="app">
     <header>
-      <h1>タスク管理</h1>
-      <div id="auth-container">
-        <img id="userPhoto" style="display:none;">
-        <span id="userName" style="display:none;"></span>
-        <button id="loginBtn">Googleでログイン</button>
-        <button id="changeAccountBtn" style="display:none;">アカウント変更</button>
-        <button id="logoutBtn" style="display:none;">ログアウト</button>
+        <div>
+            <h1>タスク管理</h1>
         </div>
-      <select id="projectFilter">
-        <option value="all">すべてのプロジェクト</option>
-      </select>
-      <button id="addProjectBtn" disabled>＋</button>
+        <div>
+            <select id="projectFilter">
+                <option value="all">すべてのプロジェクト</option>
+            </select>
+            <button id="addProjectBtn">＋</button>
+        </div>
+        <div>
+            <button id="viewToggleBtn">タイムライン表示</button>
+        </div>
     </header>
 
     <main id="projectList"></main>
+    <main id="timelineView">
+      <div class="timeline-column" id="dated-tasks-column">
+        <h2>期間あり</h2>
+        <div class="timeline-separator-handle" id="dated-separator-handle">
+            <div class="timeline-separator-line"></div>
+        </div>
+        <div id="dated-tasks-list"></div>
+      </div>
+      <div class="timeline-column" id="undated-tasks-column">
+        <h2>期間なし</h2>
+        <div class="timeline-separator-handle" id="undated-separator-handle">
+            <div class="timeline-separator-line"></div>
+        </div>
+        <div id="undated-tasks-list"></div>
+      </div>
+    </main>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-  
-  <script>
-    const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_PROJECT_ID.appspot.com",
-        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-        appId: "YOUR_APP_ID"
-    };
 
-    const app = firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    const googleProvider = new firebase.auth.GoogleAuthProvider();
+<script>
+let data = JSON.parse(localStorage.getItem("taskData")) || [];
+let datedTimelineOrder = JSON.parse(localStorage.getItem("datedTimelineOrder")) || [];
+let undatedTimelineOrder = JSON.parse(localStorage.getItem("undatedTimelineOrder")) || [];
+let datedSeparatorPosition = localStorage.getItem("datedSeparatorPosition") || "100px";
+let undatedSeparatorPosition = localStorage.getItem("undatedSeparatorPosition") || "100px";
 
-    let data = [];
-    let currentUser = null;
 
-    // ▼▼▼ DOM要素の取得を更新 ▼▼▼
-    const loginBtn = document.getElementById("loginBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const changeAccountBtn = document.getElementById("changeAccountBtn");
-    const userPhoto = document.getElementById("userPhoto");
-    const userName = document.getElementById("userName");
-    const projectList = document.getElementById("projectList");
-    const addProjectBtn = document.getElementById("addProjectBtn");
-    const projectFilter = document.getElementById("projectFilter");
-    // ▲▲▲ DOM要素の取得を更新 ▲▲▲
+const projectList = document.getElementById("projectList");
+const timelineView = document.getElementById("timelineView");
+const datedTasksList = document.getElementById("dated-tasks-list");
+const undatedTasksList = document.getElementById("undated-tasks-list");
 
-    const colors = ['#FF5722', '#4CAF50', '#2196F3', '#FFC107', '#9C27B0', '#00BCD4', '#FF9800', '#E91E63', '#795548', '#3F51B5'];
-    
-    // ▼▼▼ 認証処理を更新 ▼▼▼
-    loginBtn.onclick = () => auth.signInWithPopup(googleProvider);
-    logoutBtn.onclick = () => auth.signOut();
-    changeAccountBtn.onclick = () => {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        // アカウント選択画面を強制的に表示する設定
-        provider.setCustomParameters({
-            prompt: 'select_account'
-        });
-        auth.signInWithPopup(provider);
-    };
+const addProjectBtn = document.getElementById("addProjectBtn");
+const projectFilter = document.getElementById("projectFilter");
+const viewToggleBtn = document.getElementById("viewToggleBtn");
 
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        currentUser = user;
+let isTimelineView = false;
 
-        // UIの表示/非表示を更新
-        userPhoto.src = user.photoURL;
-        userPhoto.style.display = "inline";
-        userName.textContent = user.displayName;
-        userName.style.display = "inline";
-        
-        changeAccountBtn.style.display = "inline-block";
-        logoutBtn.style.display = "inline-block";
-        loginBtn.style.display = "none";
-        
-        addProjectBtn.disabled = false;
-        loadData();
-      } else {
-        currentUser = null;
+const colors = ['#FF5722', '#4CAF50', '#2196F3', '#FFC107', '#9C27B0', '#00BCD4', '#FF9800', '#E91E63', '#795548', '#3F51B5'];
 
-        // UIの表示/非表示を更新
-        userPhoto.style.display = "none";
-        userName.style.display = "none";
-        changeAccountBtn.style.display = "none";
-        logoutBtn.style.display = "none";
-        loginBtn.style.display = "inline-block";
+// --- ID管理 ---
+const generateId = () => `id_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-        addProjectBtn.disabled = true;
-        data = [];
-        render();
-      }
+function ensureAllNodesHaveId(nodes) {
+    nodes.forEach(node => {
+        if (!node.id) {
+            node.id = generateId();
+        }
+        if (node.children) {
+            ensureAllNodesHaveId(node.children);
+        }
     });
-    // ▲▲▲ 認証処理を更新 ▲▲▲
+}
 
-    async function loadData() {
-      if (!currentUser) return;
-      const docRef = db.collection("users").doc(currentUser.uid);
-      const doc = await docRef.get();
-      data = (doc.exists && doc.data().tasks) ? doc.data().tasks : [];
-      render();
+// --- イベントリスナー ---
+projectFilter.addEventListener("change", () => render());
+
+viewToggleBtn.addEventListener("click", () => {
+    isTimelineView = !isTimelineView;
+    updateView();
+});
+
+addProjectBtn.onclick = () => {
+  const name = prompt("プロジェクト名:");
+  if (name) {
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    data.push({ id: generateId(), name, children: [], color });
+    rerenderViews();
+  }
+};
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.popup-menu') && !e.target.closest('.timeline-item-header') && !e.target.closest('.task-content span')) {
+        closePopupMenus();
     }
+});
 
-    function saveData() {
-      if (!currentUser) return;
-      db.collection("users").doc(currentUser.uid).set({ tasks: data })
-        .catch(error => {
-          console.error("データの保存に失敗しました: ", error);
-          alert("データの保存に失敗しました。");
+
+// --- データ保存と描画管理 ---
+function saveData() {
+  localStorage.setItem("taskData", JSON.stringify(data));
+}
+
+function rerenderViews() {
+    saveData();
+    updateView();
+}
+
+function updateView() {
+    if (isTimelineView) {
+        projectList.style.display = "none";
+        timelineView.style.display = "flex";
+        projectFilter.style.display = "none";
+        addProjectBtn.style.display = "none";
+        viewToggleBtn.textContent = "タスク一覧表示";
+        renderTimeline();
+    } else {
+        projectList.style.display = "block";
+        timelineView.style.display = "none";
+        projectFilter.style.display = "inline-block";
+        addProjectBtn.style.display = "inline-block";
+        viewToggleBtn.textContent = "タイムライン表示";
+        render();
+    }
+}
+
+// --- データ検索・操作 ---
+function findTaskById(nodes, id) {
+    for (const node of nodes) {
+        if (node.id === id) return node;
+        if (node.children) {
+            const found = findTaskById(node.children, id);
+            if (found) return found;
+        }
+    }
+    return null;
+}
+
+function findAndRemoveTaskById(nodes, id) {
+    for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].id === id) {
+            nodes.splice(i, 1);
+            return true;
+        }
+        if (nodes[i].children) {
+            if (findAndRemoveTaskById(nodes[i].children, id)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+
+// --- ポップアップメニュー ---
+function createPopupMenu(taskOrProject, parent, index, type) {
+  const menu = document.createElement("div");
+  menu.className = "popup-menu";
+
+  const editBtn = document.createElement("button");
+  editBtn.textContent = "✏️";
+  editBtn.title = "編集";
+  editBtn.onclick = (e) => {
+    e.stopPropagation();
+    const newName = prompt((type === "project" ? "プロジェクト" : "タスク") + "名を編集:", taskOrProject.name);
+    if (newName) {
+      taskOrProject.name = newName;
+      rerenderViews();
+    }
+    closePopupMenus();
+  };
+  menu.appendChild(editBtn);
+
+  if (type === "task") {
+    const periodBtn = document.createElement("button");
+    periodBtn.textContent = "📅";
+    periodBtn.title = "期間編集";
+    periodBtn.onclick = (e) => {
+      e.stopPropagation();
+      showPeriodEditDialog(taskOrProject);
+      closePopupMenus();
+    };
+    menu.appendChild(periodBtn);
+  }
+
+  const commentBtn = document.createElement("button");
+  commentBtn.textContent = "💬";
+  commentBtn.title = "コメント";
+  commentBtn.onclick = (e) => {
+    e.stopPropagation();
+    const newComment = prompt("コメント:", taskOrProject.comment || "");
+    if (newComment !== null) {
+      taskOrProject.comment = newComment;
+      rerenderViews();
+    }
+    closePopupMenus();
+  };
+  menu.appendChild(commentBtn);
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.textContent = "🗑️";
+  deleteBtn.title = "削除";
+  deleteBtn.onclick = (e) => {
+    e.stopPropagation();
+    if (confirm("本当に削除しますか？")) {
+      if (type === "project") {
+        data.splice(index, 1);
+      } else if (type === "task") {
+        findAndRemoveTaskById(data, taskOrProject.id);
+      }
+      rerenderViews();
+    }
+    closePopupMenus();
+  };
+  menu.appendChild(deleteBtn);
+
+  return menu;
+}
+
+function closePopupMenus() {
+  document.querySelectorAll(".popup-menu").forEach(menu => menu.style.display = "none");
+}
+
+function togglePopupMenu(titleElem, menu) {
+  if (menu.style.display === "block") {
+    menu.style.display = "none";
+  } else {
+    closePopupMenus();
+    const rect = titleElem.getBoundingClientRect();
+    menu.style.top = (window.scrollY + rect.bottom + 4) + "px";
+    menu.style.left = (window.scrollX + rect.left) + "px";
+    menu.style.display = "block";
+  }
+}
+
+// --- 期間編集ダイアログ ---
+function showPeriodEditDialog(task) {
+  const modalBg = document.createElement("div");
+    modalBg.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center; z-index:9999;";
+  const modal = document.createElement("div");
+    modal.style.cssText = "background:white; padding:16px; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.2); min-width:280px;";
+
+  modal.innerHTML = `
+    <h3>期間を選択</h3>
+    <label style="display:block; margin-top:8px;">開始日:</label>
+    <input type="date" id="startDateInput" value="${task.startDate || ''}">
+    <label style="display:block; margin-top:8px;">終了日:</label>
+    <input type="date" id="endDateInput" value="${task.endDate || ''}">
+    <div style="margin-top:12px; text-align:right;">
+        <button id="cancelBtn" style="margin-right:8px;">キャンセル</button>
+        <button id="okBtn">OK</button>
+    </div>
+  `;
+  
+  modalBg.appendChild(modal);
+  document.body.appendChild(modalBg);
+  
+  modal.querySelector('#cancelBtn').onclick = () => document.body.removeChild(modalBg);
+  modal.querySelector('#okBtn').onclick = () => {
+    const start = modal.querySelector('#startDateInput').value;
+    const end = modal.querySelector('#endDateInput').value;
+    if (start && end && start > end) {
+      alert("開始日は終了日以前を選択してください。");
+      return;
+    }
+    task.startDate = start;
+    task.endDate = end;
+    rerenderViews();
+    document.body.removeChild(modalBg);
+  };
+}
+
+// --- タイムライン描画 ---
+function renderTimeline() {
+    datedTasksList.innerHTML = "";
+    undatedTasksList.innerHTML = "";
+
+    const datedTasks = [];
+    const undatedTasks = [];
+
+    function collectTasks(nodes, path) {
+        nodes.forEach(node => {
+            const isLeafTask = !node.children || node.children.length === 0;
+            const isNotDone = !node.done;
+            if (isLeafTask && isNotDone) {
+                const project = findProjectForNode(data, node.id);
+                const taskInfo = {
+                    ...node,
+                    projectColor: project ? project.color : '#ccc',
+                    path: [...path, node.name]
+                };
+                if (taskInfo.startDate) {
+                    datedTasks.push(taskInfo);
+                } else {
+                    undatedTasks.push(taskInfo);
+                }
+            }
+            if (node.children && node.children.length > 0) {
+                collectTasks(node.children, [...path, node.name]);
+            }
         });
     }
 
-    // ===================================================
-    // 以降のアプリケーションコア機能は変更ありません
-    // ===================================================
-
-    projectFilter.addEventListener("change", () => render());
-
-    function createPopupMenu(taskOrProject, parent, index, type) {
-      const menu = document.createElement("div");
-      menu.className = "popup-menu";
-      const editBtn = document.createElement("button");
-      editBtn.textContent = "✏️";
-      editBtn.title = "編集";
-      editBtn.onclick = (e) => {
-        e.stopPropagation();
-        const newName = prompt((type === "project" ? "プロジェクト" : "タスク") + "名を編集:", taskOrProject.name);
-        if (newName) {
-          taskOrProject.name = newName;
-          saveData();
-          render();
+    function findProjectForNode(projects, nodeId) {
+        for (const project of projects) {
+            if (findTaskById([project], nodeId)) return project;
         }
-        closePopupMenus();
-      };
-      menu.appendChild(editBtn);
-      if (type === "task") {
-        const periodBtn = document.createElement("button");
-        periodBtn.textContent = "📅";
-        periodBtn.title = "期間編集";
-        periodBtn.onclick = (e) => {
-          e.stopPropagation();
-          showPeriodEditDialog(taskOrProject);
-          closePopupMenus();
-        };
-        menu.appendChild(periodBtn);
-      }
-      const commentBtn = document.createElement("button");
-      commentBtn.textContent = "💬";
-      commentBtn.title = "コメント";
-      commentBtn.onclick = (e) => {
-        e.stopPropagation();
-        const newComment = prompt("コメント:", taskOrProject.comment || "");
-        if (newComment !== null) {
-          taskOrProject.comment = newComment;
-          saveData();
-          render();
+        return null;
+    }
+    
+    data.forEach(project => {
+        collectTasks(project.children, [project.name]);
+    });
+    
+    const sortWithOrder = (tasks, order) => {
+        tasks.sort((a, b) => {
+            const indexA = order.indexOf(a.id);
+            const indexB = order.indexOf(b.id);
+            if (indexA === -1 && indexB === -1) return 0;
+            if (indexA === -1) return 1;
+            if (indexB === -1) return -1;
+            return indexA - indexB;
+        });
+    };
+
+    sortWithOrder(datedTasks, datedTimelineOrder);
+    sortWithOrder(undatedTasks, undatedTimelineOrder);
+
+    datedTasks.forEach(task => datedTasksList.appendChild(createTimelineItem(task)));
+    undatedTasks.forEach(task => undatedTasksList.appendChild(createTimelineItem(task)));
+
+    initSortableForTimelineColumns();
+    initSeparators();
+}
+
+function createTimelineItem(task) {
+    const item = document.createElement('div');
+    item.className = 'timeline-item';
+    item.dataset.taskId = task.id;
+    const dragHandle = createIconButton("↕️");
+    dragHandle.classList.add("drag-handle");
+    dragHandle.onclick = (e) => e.stopPropagation();
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = task.done;
+    checkbox.dataset.taskId = task.id;
+    checkbox.onclick = (e) => e.stopPropagation();
+    checkbox.onchange = (e) => {
+        const taskId = e.target.dataset.taskId;
+        const targetTask = findTaskById(data, taskId);
+        if (targetTask) {
+            targetTask.done = e.target.checked;
+            saveData();
+            item.classList.toggle('is-done', e.target.checked);
         }
-        closePopupMenus();
-      };
-      menu.appendChild(commentBtn);
-      const deleteBtn = document.createElement("button");
-      deleteBtn.textContent = "🗑️";
-      deleteBtn.title = "削除";
-      deleteBtn.onclick = (e) => {
-        e.stopPropagation();
-        if (confirm("本当に削除しますか？")) {
-          if (type === "project") {
-            data.splice(index, 1);
-          } else if (type === "task") {
-            parent.children.splice(index, 1);
-          }
-          saveData();
-          render();
+    };
+    const content = document.createElement('div');
+    content.className = 'timeline-item-content';
+    content.style.borderLeftColor = task.projectColor || '#ccc';
+    const header = document.createElement('div');
+    header.className = 'timeline-item-header';
+    const pathString = task.path.slice(0, -1).join(' > ');
+    let headerHTML = task.name;
+    if (pathString) {
+        headerHTML += ` <span style="font-weight: normal; font-size: 0.8em; color: #666;">(${pathString})</span>`;
+    }
+    header.innerHTML = headerHTML;
+    header.onclick = (e) => e.stopPropagation();
+    header.addEventListener('click', (e) => {
+        const currentTask = findTaskById(data, task.id);
+        if (currentTask) {
+            const menu = createPopupMenu(currentTask, null, null, "task");
+            document.body.appendChild(menu);
+            togglePopupMenu(header, menu);
         }
-        closePopupMenus();
-      };
-      menu.appendChild(deleteBtn);
-      return menu;
+    });
+    const meta = document.createElement('div');
+    meta.className = 'timeline-item-meta';
+    let periodText = '期間: 未設定';
+    if (task.startDate) {
+        const formatDate = d => d ? new Date(d).toLocaleDateString() : '?';
+        periodText = `<strong>期間:</strong> ${formatDate(task.startDate)} ~ ${formatDate(task.endDate)}`;
     }
+    meta.innerHTML = periodText;
+    content.appendChild(header);
+    content.appendChild(meta);
+    item.appendChild(dragHandle);
+    item.appendChild(checkbox);
+    item.appendChild(content);
+    return item;
+}
 
-    function closePopupMenus() {
-      document.querySelectorAll(".popup-menu").forEach(menu => menu.style.display = "none");
+
+// --- 階層リスト描画 ---
+function render() {
+  const selected = projectFilter.value;
+  projectList.innerHTML = "";
+  projectFilter.innerHTML = '<option value="all">すべてのプロジェクト</option>';
+  data.forEach(p => projectFilter.add(new Option(p.name, p.name)));
+  projectFilter.value = selected;
+
+  data.forEach((project, index) => {
+    if (selected === "all" || selected === project.name) {
+      projectList.appendChild(createProjectElement(project, index, `${index}`));
     }
+  });
+  initSortable();
+}
 
-    function togglePopupMenu(titleElem, menu) {
-      if (menu.style.display === "block") {
-        menu.style.display = "none";
-      } else {
-        closePopupMenus();
-        const rect = titleElem.getBoundingClientRect();
-        menu.style.top = (window.scrollY + rect.bottom + 4) + "px";
-        menu.style.left = (window.scrollX + rect.left) + "px";
-        menu.style.display = "block";
-      }
+function createProjectElement(project, index, path) {
+  const div = document.createElement("div");
+  div.className = "project";
+  const bar = document.createElement("div");
+  bar.className = "bar";
+  bar.style.backgroundColor = project.color || colors[0];
+  const content = document.createElement("div");
+  content.className = "task-content";
+  const dragHandle = createIconButton("↕️");
+  dragHandle.classList.add("drag-handle");
+  const title = document.createElement("span");
+  title.textContent = project.name;
+  const popupMenu = createPopupMenu(project, null, index, "project");
+  document.body.appendChild(popupMenu);
+  title.addEventListener("click", (e) => {
+    e.stopPropagation();
+    togglePopupMenu(title, popupMenu);
+  });
+  const addSubBtn = createIconButton("➕", () => {
+    const name = prompt("タスク名:");
+    if (name) {
+      if (!project.children) project.children = [];
+      project.children.push({ id: generateId(), name, children: [], comment: "", done: false });
+      rerenderViews();
     }
+  });
+  const colorBtn = createIconButton("🎨", () => {
+    const newColor = prompt("0〜9の色番号を入力:\n" + colors.map((c, i) => `${i}: ${c}`).join("\n"));
+    const idx = parseInt(newColor);
+    if (!isNaN(idx) && colors[idx]) {
+      project.color = colors[idx];
+      rerenderViews();
+    }
+  });
+  content.append(dragHandle, colorBtn, title, addSubBtn);
+  div.append(bar, content);
+  if (project.children) {
+    const ul = document.createElement("div");
+    ul.className = "task-list";
+    ul.dataset.path = path;
+    project.children.forEach((child, childIndex) => {
+      ul.appendChild(createTaskElement(child, project, childIndex, project.color, `${path}-${childIndex}`));
+    });
+    div.appendChild(ul);
+  }
+  return div;
+}
 
-    function render() {
-      const selected = projectFilter.value;
-      projectList.innerHTML = "";
-      document.querySelectorAll('.popup-menu').forEach(menu => menu.remove());
-      projectFilter.innerHTML = '<option value="all">すべてのプロジェクト</option>';
-      data.forEach(project => {
-        const opt = document.createElement("option");
-        opt.value = project.name;
-        opt.textContent = project.name;
-        projectFilter.appendChild(opt);
-      });
-      projectFilter.value = selected;
-      data.forEach((project, index) => {
-        if (selected === "all" || selected === project.name) {
-          const projectElem = createProjectElement(project, index);
-          projectList.appendChild(projectElem);
+function createTaskElement(task, parent, index, color, path) {
+  const div = document.createElement("div");
+  div.className = "task";
+  if (task.done) div.classList.add("completed-task");
+  const isLeaf = !task.children || task.children.length === 0;
+  if (isLeaf && !task.done) div.classList.add("leaf-task");
+  const bar = document.createElement("div");
+  bar.className = "bar";
+  bar.style.backgroundColor = color;
+  const content = document.createElement("div");
+  content.className = "task-content";
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.checked = task.done;
+  checkbox.onchange = () => {
+    task.done = checkbox.checked;
+    checkAutoComplete(task, parent);
+    rerenderViews();
+  };
+  const dragHandle = createIconButton("↕️");
+  dragHandle.classList.add("drag-handle");
+  const title = document.createElement("span");
+  title.textContent = task.name;
+  const popupMenu = createPopupMenu(task, parent, index, "task");
+  document.body.appendChild(popupMenu);
+  title.addEventListener("click", (e) => {
+    e.stopPropagation();
+    togglePopupMenu(title, popupMenu);
+  });
+  const periodSpan = document.createElement("span");
+  periodSpan.style.cssText = "font-size:12px; color:#666; margin-left:6px;";
+  if (task.startDate) {
+    const formatDate = d => new Date(d).toLocaleDateString('ja-JP', {month:'numeric', day:'numeric'});
+    periodSpan.textContent = `(${formatDate(task.startDate)}~${task.endDate ? formatDate(task.endDate) : ''})`;
+  }
+  const addSubBtn = createIconButton("➕", () => {
+    const name = prompt("タスク名:");
+    if (name) {
+      if (!task.children) task.children = [];
+      task.children.push({ id: generateId(), name, children: [], comment: "", done: false });
+      rerenderViews();
+    }
+  });
+  content.append(dragHandle, checkbox, title, periodSpan, addSubBtn);
+  div.append(bar, content);
+  if (task.children?.length) {
+    const ul = document.createElement("div");
+    ul.className = "task-list";
+    ul.dataset.path = path;
+    task.children.forEach((child, childIndex) => {
+      ul.appendChild(createTaskElement(child, task, childIndex, color, `${path}-${childIndex}`));
+    });
+    div.appendChild(ul);
+  }
+  return div;
+}
+
+function checkAutoComplete(task, parent) {
+  if (!parent || !parent.children) return;
+  const allDone = parent.children.every(t => t.done);
+  if(allDone) parent.done = true;
+  else parent.done = false;
+}
+
+function createIconButton(icon, action) {
+  const btn = document.createElement("button");
+  btn.className = "icon-btn";
+  btn.innerText = icon;
+  btn.onclick = action;
+  return btn;
+}
+
+// --- SortableJS (ドラッグ＆ドロップ) ---
+function initSortableForTimelineColumns() {
+    if (datedTasksList.sortableInstance) {
+        datedTasksList.sortableInstance.destroy();
+    }
+    if (undatedTasksList.sortableInstance) {
+        undatedTasksList.sortableInstance.destroy();
+    }
+    datedTasksList.sortableInstance = Sortable.create(datedTasksList, {
+        animation: 150,
+        handle: ".drag-handle",
+        group: "timelineTasks", 
+        onEnd: () => {
+            const newOrder = Array.from(datedTasksList.querySelectorAll('.timeline-item'))
+                                  .map(item => item.dataset.taskId);
+            datedTimelineOrder = newOrder;
+            localStorage.setItem("datedTimelineOrder", JSON.stringify(datedTimelineOrder));
         }
-      });
-      initSortable();
-    }
+    });
+    undatedTasksList.sortableInstance = Sortable.create(undatedTasksList, {
+        animation: 150,
+        handle: ".drag-handle",
+        group: "timelineTasks",
+        onEnd: () => {
+            const newOrder = Array.from(undatedTasksList.querySelectorAll('.timeline-item'))
+                                  .map(item => item.dataset.taskId);
+            undatedTimelineOrder = newOrder;
+            localStorage.setItem("undatedTimelineOrder", JSON.stringify(undatedTimelineOrder));
+        }
+    });
+}
 
-    function initSortable() {
-      Sortable.create(projectList, {
+function initSortable() {
+    if (projectList.sortableInstance) {
+        projectList.sortableInstance.destroy();
+    }
+    projectList.sortableInstance = Sortable.create(projectList, {
         animation: 150,
         handle: ".drag-handle",
         onEnd: function (evt) {
-          const [moved] = data.splice(evt.oldIndex, 1);
-          data.splice(evt.newIndex, 0, moved);
-          saveData();
-          render();
-        }
-      });
-      document.querySelectorAll(".task-list").forEach(list => {
-        if (list.sortable) list.sortable.destroy();
-        Sortable.create(list, {
-          animation: 150,
-          handle: ".drag-handle",
-          onEnd: function (evt) {
-            const parentInfo = getParentInfoByElement(list);
-            if (!parentInfo) return;
-            const [movedItem] = parentInfo.children.splice(evt.oldIndex, 1);
-            parentInfo.children.splice(evt.newIndex, 0, movedItem);
-            saveData();
-            render();
-          }
-        });
-      });
-    }
-
-    function getParentInfoByElement(listElem) {
-        const parentElement = listElem.closest('.project, .task');
-        if (!parentElement) return null;
-        const parentName = parentElement.querySelector(".task-content > span").textContent.trim();
-        function findRecursive(nodes, targetName) {
-            for (const node of nodes) {
-                if (node.name === targetName) {
-                    return { parent: node, children: node.children || [] };
-                }
-                if (node.children) {
-                    const res = findRecursive(node.children, targetName);
-                    if (res) return res;
-                }
-            }
-            return null;
-        }
-        let rootNode = data.find(p => p.name === parentName);
-        if (rootNode) return { parent: rootNode, children: rootNode.children || [] };
-        return findRecursive(data, parentName);
-    }
-
-    function createIconButton(icon, action) {
-      const btn = document.createElement("button");
-      btn.className = "icon-btn";
-      btn.innerHTML = icon;
-      btn.onclick = (e) => {
-          e.stopPropagation();
-          action();
-      };
-      return btn;
-    }
-
-    function createProjectElement(project, index) {
-      const div = document.createElement("div");
-      div.className = "project";
-      const bar = document.createElement("div");
-      bar.className = "bar";
-      bar.style.backgroundColor = project.color || colors[0];
-      const content = document.createElement("div");
-      content.className = "task-content";
-      const dragHandle = createIconButton("↕️", () => {});
-      dragHandle.classList.add("drag-handle");
-      const title = document.createElement("span");
-      title.textContent = project.name;
-      const popupMenu = createPopupMenu(project, null, index, "project");
-      document.body.appendChild(popupMenu);
-      title.addEventListener("click", (e) => {
-          e.stopPropagation();
-          togglePopupMenu(title, popupMenu);
-      });
-      const addSubBtn = createIconButton("➕", () => {
-        const name = prompt("小プロジェクト/タスク名:");
-        if (name) {
-          if (!project.children) project.children = [];
-          project.children.push({ name, children: [], comment: "", done: false, startDate: "", endDate: "" });
-          saveData();
-          render();
-        }
-      });
-      const colorBtn = createIconButton("🎨", () => {
-          const newColor = prompt("0〜9の色番号を入力:\n" + colors.map((c, i) => `${i}: ${c}`).join("\n"));
-          const idx = parseInt(newColor);
-          if (!isNaN(idx) && colors[idx]) {
-              project.color = colors[idx];
-              saveData();
-              render();
-          }
-      });
-      content.appendChild(dragHandle);
-      content.appendChild(title);
-      content.appendChild(addSubBtn);
-      content.appendChild(colorBtn);
-      div.appendChild(bar);
-      div.appendChild(content);
-      if (project.children) {
-        const ul = document.createElement("div");
-        ul.className = "task-list";
-        project.children.forEach((child, childIndex) => {
-          ul.appendChild(createTaskElement(child, project, childIndex, project.color));
-        });
-        div.appendChild(ul);
-      }
-      return div;
-    }
-
-    function createTaskElement(task, parent, index, color) {
-      const div = document.createElement("div");
-      div.className = "task";
-      if (task.done) div.classList.add("completed-task");
-      const isLeaf = !task.children || task.children.length === 0;
-      if (isLeaf && !task.done) {
-        div.classList.add("leaf-task");
-      }
-      const bar = document.createElement("div");
-      bar.className = "bar";
-      bar.style.backgroundColor = color;
-      const content = document.createElement("div");
-      content.className = "task-content";
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.checked = task.done;
-      checkbox.onclick = (e) => e.stopPropagation();
-      checkbox.onchange = () => {
-        task.done = checkbox.checked;
-        checkAutoComplete(task, parent);
-        saveData();
-        render();
-      };
-      const dragHandle = createIconButton("↕️", () => {});
-      dragHandle.classList.add("drag-handle");
-      const title = document.createElement("span");
-      title.textContent = task.name;
-      const popupMenu = createPopupMenu(task, parent, index, "task");
-      document.body.appendChild(popupMenu);
-      title.addEventListener("click", (e) => {
-        e.stopPropagation();
-        togglePopupMenu(title, popupMenu);
-      });
-      const periodSpan = document.createElement("span");
-      periodSpan.style.fontSize = "12px";
-      periodSpan.style.color = "#666";
-      periodSpan.style.marginLeft = "6px";
-      if (task.startDate && task.endDate) {
-        const formatDate = (d) => new Date(d).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
-        periodSpan.textContent = `(${formatDate(task.startDate)}~${formatDate(task.endDate)})`;
-      }
-      const addSubBtn = createIconButton("➕", () => {
-        const name = prompt("タスク名:");
-        if (name) {
-          if (!task.children) task.children = [];
-          task.children.push({ name, children: [], comment: "", done: false, startDate: "", endDate: "" });
-          saveData();
-          render();
-        }
-      });
-      const commentLine = document.createElement("div");
-      commentLine.style.fontSize = "12px";
-      commentLine.style.color = "#666";
-      commentLine.textContent = task.comment?.split("\n")[0] || "";
-      content.appendChild(dragHandle);
-      content.appendChild(checkbox);
-      content.appendChild(title);
-      content.appendChild(periodSpan);
-      content.appendChild(addSubBtn);
-      content.appendChild(commentLine);
-      div.appendChild(bar);
-      div.appendChild(content);
-      if (task.children?.length) {
-        const ul = document.createElement("div");
-        ul.className = "task-list";
-        task.children.forEach((child, childIndex) => {
-          ul.appendChild(createTaskElement(child, task, childIndex, color));
-        });
-        div.appendChild(ul);
-      }
-      return div;
-    }
-    
-    function showPeriodEditDialog(task) {
-        const modalBg = document.createElement("div");
-        Object.assign(modalBg.style, {
-            position: "fixed", top: "0", left: "0", width: "100%", height: "100%",
-            backgroundColor: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center",
-            justifyContent: "center", zIndex: "9999"
-        });
-        const modal = document.createElement("div");
-        Object.assign(modal.style, {
-            backgroundColor: "white", padding: "16px", borderRadius: "8px",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.2)", minWidth: "280px"
-        });
-        modal.innerHTML = `
-            <h3>期間を選択</h3>
-            <label style="display: block; margin-top: 8px;">開始日:
-                <input type="date" id="startDateInput" value="${task.startDate || ''}">
-            </label>
-            <label style="display: block; margin-top: 8px;">終了日:
-                <input type="date" id="endDateInput" value="${task.endDate || ''}">
-            </label>
-            <div style="margin-top: 12px; text-align: right;">
-                <button id="cancelBtn" style="margin-right: 8px; background-color: #777;">キャンセル</button>
-                <button id="okBtn">OK</button>
-            </div>
-        `;
-        modalBg.appendChild(modal);
-        document.body.appendChild(modalBg);
-        modal.querySelector("#okBtn").onclick = () => {
-            const start = modal.querySelector("#startDateInput").value;
-            const end = modal.querySelector("#endDateInput").value;
-            if (start && end && start > end) {
-                alert("開始日は終了日以前を選択してください。");
-                return;
-            }
-            task.startDate = start || "";
-            task.endDate = end || "";
-            saveData();
-            render();
-            document.body.removeChild(modalBg);
-        };
-        modal.querySelector("#cancelBtn").onclick = () => {
-            document.body.removeChild(modalBg);
-        };
-    }
-
-    function checkAutoComplete(task, parent) {
-      if (!parent || !parent.children) return;
-      const allDone = parent.children.every(t => t.done);
-      parent.done = allDone;
-    }
-
-    addProjectBtn.onclick = () => {
-      const name = prompt("プロジェクト名:");
-      if (name) {
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        data.push({ name, children: [], color });
-        saveData();
-        render();
-      }
-    };
-
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.popup-menu') && !e.target.closest('.task-content span')) {
-            closePopupMenus();
+            const [movedItem] = data.splice(evt.oldIndex, 1);
+            data.splice(evt.newIndex, 0, movedItem);
+            rerenderViews();
         }
     });
-  </script>
+
+    function getArrayFromPath(path) {
+        if (!path) return data;
+        const indices = path.split('-');
+        let current = data;
+        for (let i = 0; i < indices.length - 1; i++) {
+            current = current[parseInt(indices[i])].children;
+        }
+        return current[parseInt(indices[indices.length - 1])].children;
+    }
+    
+    document.querySelectorAll(".task-list").forEach(list => {
+        if(list.sortableInstance) {
+            list.sortableInstance.destroy();
+        }
+        list.sortableInstance = new Sortable(list, {
+            group: 'nested',
+            animation: 150,
+            handle: ".drag-handle",
+            onEnd: (evt) => {
+                const fromPath = evt.from.dataset.path;
+                const toPath = evt.to.dataset.path;
+                
+                if (fromPath !== toPath) {
+                    alert("異なる階層へのタスク移動は現在サポートされていません。");
+                    rerenderViews();
+                    return;
+                }
+
+                const parentArray = fromPath ? getArrayFromPath(fromPath) : data;
+                if(parentArray){
+                    const [movedItem] = parentArray.splice(evt.oldIndex, 1);
+                    parentArray.splice(evt.newIndex, 0, movedItem);
+                    rerenderViews();
+                }
+            }
+        });
+    });
+}
+
+
+function initSeparators() {
+    // ★★★ 変更点: IDをハンドルのものに変更 ★★★
+    const datedSeparatorHandle = document.getElementById('dated-separator-handle');
+    const undatedSeparatorHandle = document.getElementById('undated-separator-handle');
+
+    // 保存された位置を適用
+    datedSeparatorHandle.style.top = datedSeparatorPosition;
+    undatedSeparatorHandle.style.top = undatedSeparatorPosition;
+
+    function makeDraggable(handle, storageKey, positionVarName) {
+        handle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            const startY = e.clientY;
+            const startTop = handle.offsetTop;
+
+            function onMouseMove(moveE) {
+                const newTop = startTop + (moveE.clientY - startY);
+                handle.style.top = newTop + 'px';
+            }
+
+            function onMouseUp() {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+
+                const finalPosition = handle.style.top;
+                localStorage.setItem(storageKey, finalPosition);
+
+                if (positionVarName === 'datedSeparatorPosition') {
+                    datedSeparatorPosition = finalPosition;
+                } else if (positionVarName === 'undatedSeparatorPosition') {
+                    undatedSeparatorPosition = finalPosition;
+                }
+            }
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+    }
+
+    makeDraggable(datedSeparatorHandle, 'datedSeparatorPosition', 'datedSeparatorPosition');
+    makeDraggable(undatedSeparatorHandle, 'undatedSeparatorPosition', 'undatedSeparatorPosition');
+}
+
+
+// --- 初期化 ---
+ensureAllNodesHaveId(data);
+updateView();
+
+</script>
 </body>
 </html>
