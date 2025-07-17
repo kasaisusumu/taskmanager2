@@ -25,6 +25,7 @@
       margin: auto;
     }
 
+    /* ★★★ 変更点: ヘッダーをスクロールに追従させる ★★★ */
     header {
       display: flex;
       justify-content: space-between;
@@ -32,6 +33,14 @@
       margin-bottom: 12px;
       flex-wrap: wrap;
       gap: 8px;
+      
+      /* スティッキーヘッダーにするための設定 */
+      position: sticky;
+      top: 0;
+      background-color: #f7f7f7; /* bodyの背景色と同じにしてコンテンツの透けを防ぐ */
+      z-index: 500; /* コンテンツより手前、ポップアップより奥に配置 */
+      padding-top: 12px; /* 上部の余白 */
+      padding-bottom: 12px; /* 下部の余白 */
     }
 
     h1 {
@@ -48,9 +57,9 @@
       border-radius: 4px;
       font-size: 14px;
     }
-     #addProjectBtn{
-        padding: 1px 1px;
-     }
+    #addProjectBtn{
+      padding: 1px 1px;
+    }
 
     .project, .task {
       background-color: white;
@@ -105,8 +114,9 @@
       border-radius: 6px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
       padding: 4px 6px;
-      z-index: 100;
       display: none;
+      /* ★★★ 変更点: ヘッダーより手前に表示させる ★★★ */
+      z-index: 1000; 
     }
 
     .popup-menu button {
@@ -164,27 +174,20 @@
         padding-bottom: 8px;
     }
 
-    /* ★★★ 変更点: 区切り線のつかみ判定を大きくするためのハンドル ★★★ */
-    .timeline-separator-handle {
-        position: absolute;
-        width: calc(100% - 15px);
-        height: 12px; /* つかむ判定エリアの高さ */
-        cursor: ns-resize;
-        z-index: 50;
-        /* Y座標の中央にハンドルが来るように-50%ずらす */
-        transform: translateY(-50%);
+    .timeline-separator-item {
+        display: flex;
+        align-items: center;
+        height: 22px;
+        cursor: grab;
     }
-
-    /* ★★★ 変更点: 実際に表示される赤い線 ★★★ */
-    .timeline-separator-line {
-        position: absolute;
-        width: 100%;
+    .timeline-separator-item .separator-line {
         height: 2px;
         background-color: red;
-        top: 50%; /* ハンドルの中央に配置 */
-        left: 0;
-        transform: translateY(-50%);
-        pointer-events: none; /* 線自身はクリックイベントを拾わないようにする */
+        width: 100%;
+    }
+    .timeline-separator-item .drag-handle {
+        flex-shrink: 0;
+        padding-right: 8px;
     }
 
 
@@ -255,16 +258,10 @@
     <main id="timelineView">
       <div class="timeline-column" id="dated-tasks-column">
         <h2>期間あり</h2>
-        <div class="timeline-separator-handle" id="dated-separator-handle">
-            <div class="timeline-separator-line"></div>
-        </div>
         <div id="dated-tasks-list"></div>
       </div>
       <div class="timeline-column" id="undated-tasks-column">
         <h2>期間なし</h2>
-        <div class="timeline-separator-handle" id="undated-separator-handle">
-            <div class="timeline-separator-line"></div>
-        </div>
         <div id="undated-tasks-list"></div>
       </div>
     </main>
@@ -275,8 +272,9 @@
 let data = JSON.parse(localStorage.getItem("taskData")) || [];
 let datedTimelineOrder = JSON.parse(localStorage.getItem("datedTimelineOrder")) || [];
 let undatedTimelineOrder = JSON.parse(localStorage.getItem("undatedTimelineOrder")) || [];
-let datedSeparatorPosition = localStorage.getItem("datedSeparatorPosition") || "100px";
-let undatedSeparatorPosition = localStorage.getItem("undatedSeparatorPosition") || "100px";
+
+const SEPARATOR_DATED_ID = 'separator-dated-item';
+const SEPARATOR_UNDATED_ID = 'separator-undated-item';
 
 
 const projectList = document.getElementById("projectList");
@@ -509,8 +507,9 @@ function renderTimeline() {
     datedTasksList.innerHTML = "";
     undatedTasksList.innerHTML = "";
 
-    const datedTasks = [];
-    const undatedTasks = [];
+    // 1. 全ての未完了リーフタスクを収集
+    const allDatedTasks = [];
+    const allUndatedTasks = [];
 
     function collectTasks(nodes, path) {
         nodes.forEach(node => {
@@ -518,15 +517,11 @@ function renderTimeline() {
             const isNotDone = !node.done;
             if (isLeafTask && isNotDone) {
                 const project = findProjectForNode(data, node.id);
-                const taskInfo = {
-                    ...node,
-                    projectColor: project ? project.color : '#ccc',
-                    path: [...path, node.name]
-                };
+                const taskInfo = { ...node, projectColor: project ? project.color : '#ccc', path: [...path, node.name] };
                 if (taskInfo.startDate) {
-                    datedTasks.push(taskInfo);
+                    allDatedTasks.push(taskInfo);
                 } else {
-                    undatedTasks.push(taskInfo);
+                    allUndatedTasks.push(taskInfo);
                 }
             }
             if (node.children && node.children.length > 0) {
@@ -542,35 +537,99 @@ function renderTimeline() {
         return null;
     }
     
-    data.forEach(project => {
-        collectTasks(project.children, [project.name]);
-    });
+    data.forEach(project => collectTasks(project.children, [project.name]));
+
+    // 2. 「期間あり」タスクの並び替えと描画
+    const datedSeparator = { id: SEPARATOR_DATED_ID, type: 'separator' };
+    let listForRendering;
+
+    // 保存された並び順がない場合（初回表示など）は、全てを開始日でソート
+    if (datedTimelineOrder.length === 0) {
+        allDatedTasks.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+        listForRendering = [...allDatedTasks, datedSeparator];
+    } else {
+        // 保存された並び順がある場合
+        // 既存タスクを保存順に並べる
+        const existingItems = datedTimelineOrder
+            .map(id => id === SEPARATOR_DATED_ID ? datedSeparator : allDatedTasks.find(t => t.id === id))
+            .filter(Boolean); // 削除されたタスクを除外
+
+        // 新規タスク（保存順に含まれないタスク）を取得
+        const newTasks = allDatedTasks.filter(t => !datedTimelineOrder.includes(t.id));
+
+        listForRendering = [...existingItems];
+
+        // 新規タスクを日付順に挿入
+        newTasks.forEach(newTask => {
+            let inserted = false;
+            for (let i = 0; i < listForRendering.length; i++) {
+                const currentItem = listForRendering[i];
+                // 区切り線や日付のないアイテムはスキップ
+                if (currentItem.type === 'separator' || !currentItem.startDate) continue;
+                
+                // 新タスクが現在のタスクより前の日付なら、その位置に挿入
+                if (new Date(newTask.startDate) < new Date(currentItem.startDate)) {
+                    listForRendering.splice(i, 0, newTask);
+                    inserted = true;
+                    break;
+                }
+            }
+            // 適切な挿入位置がなければ、区切り線の直前に追加
+            if (!inserted) {
+                const separatorIndex = listForRendering.findIndex(t => t.type === 'separator');
+                if (separatorIndex !== -1) {
+                    listForRendering.splice(separatorIndex, 0, newTask);
+                } else {
+                    listForRendering.push(newTask); // 区切り線がない場合は末尾
+                }
+            }
+        });
+    }
     
+    listForRendering.forEach(task => datedTasksList.appendChild(createTimelineItem(task)));
+
+    // 3. 「期間なし」タスクの並び替えと描画
+    allUndatedTasks.push({ id: SEPARATOR_UNDATED_ID, type: 'separator' });
     const sortWithOrder = (tasks, order) => {
         tasks.sort((a, b) => {
-            const indexA = order.indexOf(a.id);
-            const indexB = order.indexOf(b.id);
-            if (indexA === -1 && indexB === -1) return 0;
-            if (indexA === -1) return 1;
-            if (indexB === -1) return -1;
+            let indexA = order.indexOf(a.id);
+            let indexB = order.indexOf(b.id);
+            if (indexA === -1) indexA = Infinity;
+            if (indexB === -1) indexB = Infinity;
             return indexA - indexB;
         });
     };
+    sortWithOrder(allUndatedTasks, undatedTimelineOrder);
+    allUndatedTasks.forEach(task => undatedTasksList.appendChild(createTimelineItem(task)));
 
-    sortWithOrder(datedTasks, datedTimelineOrder);
-    sortWithOrder(undatedTasks, undatedTimelineOrder);
-
-    datedTasks.forEach(task => datedTasksList.appendChild(createTimelineItem(task)));
-    undatedTasks.forEach(task => undatedTasksList.appendChild(createTimelineItem(task)));
-
+    // 4. SortableJSの初期化
     initSortableForTimelineColumns();
-    initSeparators();
 }
 
+
 function createTimelineItem(task) {
+    if (task.type === 'separator') {
+        const item = document.createElement('div');
+        item.className = 'timeline-separator-item';
+        item.dataset.taskId = task.id;
+
+        const handle = createIconButton("↕️");
+        handle.classList.add("drag-handle");
+        
+        const line = document.createElement('div');
+        line.className = 'separator-line';
+
+        item.appendChild(handle);
+        item.appendChild(line);
+        return item;
+    }
+
     const item = document.createElement('div');
     item.className = 'timeline-item';
     item.dataset.taskId = task.id;
+
+    if (task.done) item.classList.add('is-done');
+
     const dragHandle = createIconButton("↕️");
     dragHandle.classList.add("drag-handle");
     dragHandle.onclick = (e) => e.stopPropagation();
@@ -772,9 +831,9 @@ function initSortableForTimelineColumns() {
     datedTasksList.sortableInstance = Sortable.create(datedTasksList, {
         animation: 150,
         handle: ".drag-handle",
-        group: "timelineTasks", 
+        group: "timelineTasks",
         onEnd: () => {
-            const newOrder = Array.from(datedTasksList.querySelectorAll('.timeline-item'))
+            const newOrder = Array.from(datedTasksList.querySelectorAll('.timeline-item, .timeline-separator-item'))
                                   .map(item => item.dataset.taskId);
             datedTimelineOrder = newOrder;
             localStorage.setItem("datedTimelineOrder", JSON.stringify(datedTimelineOrder));
@@ -785,7 +844,7 @@ function initSortableForTimelineColumns() {
         handle: ".drag-handle",
         group: "timelineTasks",
         onEnd: () => {
-            const newOrder = Array.from(undatedTasksList.querySelectorAll('.timeline-item'))
+            const newOrder = Array.from(undatedTasksList.querySelectorAll('.timeline-item, .timeline-separator-item'))
                                   .map(item => item.dataset.taskId);
             undatedTimelineOrder = newOrder;
             localStorage.setItem("undatedTimelineOrder", JSON.stringify(undatedTimelineOrder));
@@ -845,51 +904,6 @@ function initSortable() {
         });
     });
 }
-
-
-function initSeparators() {
-    // ★★★ 変更点: IDをハンドルのものに変更 ★★★
-    const datedSeparatorHandle = document.getElementById('dated-separator-handle');
-    const undatedSeparatorHandle = document.getElementById('undated-separator-handle');
-
-    // 保存された位置を適用
-    datedSeparatorHandle.style.top = datedSeparatorPosition;
-    undatedSeparatorHandle.style.top = undatedSeparatorPosition;
-
-    function makeDraggable(handle, storageKey, positionVarName) {
-        handle.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            const startY = e.clientY;
-            const startTop = handle.offsetTop;
-
-            function onMouseMove(moveE) {
-                const newTop = startTop + (moveE.clientY - startY);
-                handle.style.top = newTop + 'px';
-            }
-
-            function onMouseUp() {
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
-
-                const finalPosition = handle.style.top;
-                localStorage.setItem(storageKey, finalPosition);
-
-                if (positionVarName === 'datedSeparatorPosition') {
-                    datedSeparatorPosition = finalPosition;
-                } else if (positionVarName === 'undatedSeparatorPosition') {
-                    undatedSeparatorPosition = finalPosition;
-                }
-            }
-
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
-        });
-    }
-
-    makeDraggable(datedSeparatorHandle, 'datedSeparatorPosition', 'datedSeparatorPosition');
-    makeDraggable(undatedSeparatorHandle, 'undatedSeparatorPosition', 'undatedSeparatorPosition');
-}
-
 
 // --- 初期化 ---
 ensureAllNodesHaveId(data);
