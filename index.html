@@ -86,7 +86,6 @@
         cursor: grab;
     }
 
-    /* ★変更点: 選択されているプロジェクトをより分かりやすく */
     .project-pill {
         padding: 5px 12px;
         border-radius: 15px;
@@ -95,8 +94,8 @@
         border: 2px solid transparent;
         color: white;
         flex-shrink: 0;
-        transition: all 0.2s ease-in-out; /* アニメーションを滑らかに */
-        opacity: 0.75; /* 非選択のものを少し薄くする */
+        transition: all 0.2s ease-in-out;
+        opacity: 0.75;
     }
     .project-pill:not(.active):hover {
         opacity: 1;
@@ -105,11 +104,14 @@
     .project-pill.active {
         border-color: #000;
         font-weight: bold;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.3); /* 影を強く */
-        transform: scale(1.1); /* 少し大きくして目立たせる */
-        opacity: 1; /* 選択されているものは完全に不透明に */
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        transform: scale(1.1);
+        opacity: 1;
     }
-    /* ★変更ここまで */
+    .project-pill.completed-projects-btn {
+        margin-left: auto;
+        opacity: 1;
+    }
 
     #calendar-task-popup-bg {
         position: fixed; top: 0; left: 0;
@@ -160,6 +162,32 @@
     .popup-menu button {
       background: none; border: none; cursor: pointer;
       font-size: 16px; margin: 0 3px; padding: 2px; color: #333;
+    }
+    .popup-menu .color-picker-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        padding: 5px;
+        max-width: 130px;
+        margin-top: 5px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        border-top: 1px solid #eee;
+    }
+    .popup-menu .color-picker-option {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        cursor: pointer;
+        border: 2px solid transparent;
+        box-sizing: border-box;
+        transition: transform 0.2s;
+    }
+    .popup-menu .color-picker-option:hover {
+        transform: scale(1.1);
+    }
+    .popup-menu .color-picker-option.selected {
+        border-color: #333;
     }
     .completed-title { text-decoration: line-through; color: #888; }
     .project > .task-list, .task > .task-list { margin-bottom: 4px; }
@@ -228,6 +256,7 @@ let data = JSON.parse(localStorage.getItem("taskData")) || [];
 let datedTimelineOrder = JSON.parse(localStorage.getItem("datedTimelineOrder")) || [];
 let undatedTimelineOrder = JSON.parse(localStorage.getItem("undatedTimelineOrder")) || [];
 let currentView = 'list'; let calendarInstance = null; let activeProjectFilter = 'all';
+let showCompletedProjects = false;
 
 // --- 定数 ---
 const SEPARATOR_DATED_ID = 'separator-dated-item'; const SEPARATOR_UNDATED_ID = 'separator-undated-item';
@@ -271,6 +300,11 @@ function updateView() {
     projectList.style.display = "none"; timelineView.style.display = "none"; calendarView.style.display = "none";
     viewSwitcher.querySelector('.active')?.classList.remove('active');
     viewSwitcher.querySelector(`[data-view="${currentView}"]`).classList.add('active');
+    
+    if (currentView !== 'list') {
+        showCompletedProjects = false;
+    }
+
     renderProjectFilterPills();
     initSortableForProjectPills();
     switch (currentView) {
@@ -298,30 +332,156 @@ function updateAllAncestorStatus(startNodeId) {
     }
 }
 
+function updateVisualStatusInDOM(startNodeId) {
+    let node = findTaskById(data, startNodeId);
+    if (!node) return;
+
+    let element = document.querySelector(`[data-id="${startNodeId}"]`);
+    if (element) {
+        element.classList.toggle('completed-task', node.done);
+    }
+
+    let parent = findParent(data, startNodeId);
+    while(parent) {
+        const parentElement = document.querySelector(`[data-id="${parent.id}"]`);
+        if (parentElement) {
+            parentElement.classList.toggle('completed-task', parent.done);
+        }
+        if (!findParent(data, parent.id)) {
+            break;
+        }
+        parent = findParent(data, parent.id);
+    }
+}
+
+function addTaskAndUpdateDOM(parent, taskName) {
+    if (!parent.children) parent.children = [];
+    const newTask = { id: generateId(), name: taskName, children: [], comment: "", done: false, startDate: parent.startDate || "", endDate: parent.endDate || "" };
+    parent.children.push(newTask);
+
+    const wasParentDone = parent.done;
+    if (wasParentDone) {
+        parent.done = false;
+        updateAllAncestorStatus(parent.id);
+    }
+    
+    saveData();
+
+    const parentEl = document.querySelector(`[data-id="${parent.id}"]`);
+    if (!parentEl) { rerenderViews(); return; }
+
+    let taskListEl = parentEl.querySelector('.task-list');
+    if (!taskListEl) {
+        taskListEl = document.createElement("div");
+        taskListEl.className = "task-list";
+        parentEl.appendChild(taskListEl);
+    }
+    
+    const project = findProjectForNode(data, parent.id) || parent;
+    const colorForTasks = project.color;
+
+    const newTaskEl = createTaskElement(newTask, parent, parent.children.length - 1, colorForTasks);
+    taskListEl.appendChild(newTaskEl);
+    
+    if (!taskListEl.sortableInstance) {
+        initSingleSortableList(taskListEl);
+    }
+
+    if (wasParentDone) {
+        let current = parent;
+        while(current) {
+            const currentEl = document.querySelector(`[data-id="${current.id}"]`);
+            if (currentEl) {
+                currentEl.classList.remove('completed-task');
+                const bar = currentEl.querySelector('.bar');
+                if (bar) {
+                    const projectForBar = findProjectForNode(data, current.id) || current;
+                    bar.style.backgroundColor = projectForBar.color || colors[0];
+                }
+            }
+            current = findParent(data, current.id);
+        }
+    }
+}
+
+
 // --- ポップアップメニュー ---
 function createPopupMenu(taskOrProject, parent, index, type) {
   const menu = document.createElement("div"); menu.className = "popup-menu";
+  
+  if (type === "project" && taskOrProject.done) {
+      const restoreBtn = document.createElement("button");
+      restoreBtn.textContent = "↩️ 元に戻す";
+      restoreBtn.title = "プロジェクトを未完了に戻します";
+      restoreBtn.onclick = (e) => {
+          e.stopPropagation();
+          taskOrProject.done = false;
+          rerenderViews();
+          closePopupMenus();
+      };
+      menu.appendChild(restoreBtn);
+  }
+
   const editBtn = document.createElement("button"); editBtn.textContent = "✏️"; editBtn.title = "編集";
   editBtn.onclick = (e) => {
     e.stopPropagation(); const newName = prompt((type === "project" ? "プロジェクト" : "タスク") + "名を編集:", taskOrProject.name);
     if (newName) { taskOrProject.name = newName; rerenderViews(); } closePopupMenus();
   };
   menu.appendChild(editBtn);
-  if (type === 'task') {
-      const periodBtn = document.createElement("button"); periodBtn.textContent = "📅"; periodBtn.title = "期間編集";
-      periodBtn.onclick = (e) => { e.stopPropagation(); showPeriodEditDialog(taskOrProject); closePopupMenus(); };
-      menu.appendChild(periodBtn);
-      const commentBtn = document.createElement("button"); commentBtn.textContent = "💬"; commentBtn.title = "コメント";
-      commentBtn.onclick = (e) => {
-        e.stopPropagation(); const newComment = prompt("コメント:", taskOrProject.comment || "");
-        if (newComment !== null) { taskOrProject.comment = newComment; rerenderViews(); } closePopupMenus();
-      };
-      menu.appendChild(commentBtn);
+
+  if (type === "project" && !taskOrProject.done) {
+    const colorBtn = document.createElement("button");
+    colorBtn.textContent = "🎨";
+    colorBtn.title = "色を変更";
+    colorBtn.onclick = (e) => {
+        e.stopPropagation();
+        const existingPicker = menu.querySelector('.color-picker-container');
+        if (existingPicker) {
+            menu.removeChild(existingPicker);
+            return;
+        }
+        const pickerContainer = document.createElement('div');
+        pickerContainer.className = 'color-picker-container';
+        colors.forEach(color => {
+            const colorOption = document.createElement('div');
+            colorOption.className = 'color-picker-option';
+            colorOption.style.backgroundColor = color;
+            if (color === taskOrProject.color) {
+                colorOption.classList.add('selected');
+            }
+            colorOption.onclick = () => {
+                taskOrProject.color = color;
+                rerenderViews();
+                closePopupMenus();
+            };
+            pickerContainer.appendChild(colorOption);
+        });
+        menu.appendChild(pickerContainer);
+    };
+    menu.appendChild(colorBtn);
   }
+
+  if (type === 'task') {
+    const periodBtn = document.createElement("button"); periodBtn.textContent = "📅"; periodBtn.title = "期間編集";
+    periodBtn.onclick = (e) => { e.stopPropagation(); showPeriodEditDialog(taskOrProject); closePopupMenus(); };
+    menu.appendChild(periodBtn);
+    const commentBtn = document.createElement("button"); commentBtn.textContent = "💬"; commentBtn.title = "コメント";
+    commentBtn.onclick = (e) => {
+      e.stopPropagation(); const newComment = prompt("コメント:", taskOrProject.comment || "");
+      if (newComment !== null) { taskOrProject.comment = newComment; rerenderViews(); } closePopupMenus();
+    };
+    menu.appendChild(commentBtn);
+  }
+
   const deleteBtn = document.createElement("button"); deleteBtn.textContent = "🗑️"; deleteBtn.title = "削除";
   deleteBtn.onclick = (e) => {
     e.stopPropagation(); if (confirm("本当に削除しますか？")) {
-      if (type === "project") data.splice(index, 1); else if (type === "task") findAndRemoveTaskById(data, taskOrProject.id);
+      const originalDataIndex = data.findIndex(item => item.id === taskOrProject.id);
+      if (type === "project" && originalDataIndex > -1) {
+          data.splice(originalDataIndex, 1);
+      } else if (type === "task") {
+          findAndRemoveTaskById(data, taskOrProject.id);
+      }
       rerenderViews();
     } closePopupMenus();
   };
@@ -360,28 +520,61 @@ function showPeriodEditDialog(task) {
 // --- プロジェクトフィルター ---
 function renderProjectFilterPills() {
     projectFilterPillsContainer.innerHTML = '';
-    const allBtn = document.createElement('div'); allBtn.textContent = 'すべて';
+    const activeProjects = data.filter(p => !p.done);
+    const completedProjects = data.filter(p => p.done);
+    
+    const projectsForPills = showCompletedProjects ? completedProjects : activeProjects;
+
+    const allBtn = document.createElement('div');
+    allBtn.textContent = 'すべて';
     allBtn.className = 'project-pill all-projects-pill';
     allBtn.style.backgroundColor = '#6c757d';
-    if (activeProjectFilter === 'all') allBtn.classList.add('active');
-    allBtn.onclick = () => { activeProjectFilter = 'all'; updateView(); };
+    if (activeProjectFilter === 'all') {
+        allBtn.classList.add('active');
+    }
+    allBtn.onclick = () => {
+        activeProjectFilter = 'all';
+        updateView();
+    };
     projectFilterPillsContainer.appendChild(allBtn);
 
-    data.forEach(project => {
+    projectsForPills.forEach(project => {
         const pill = document.createElement('div');
-        pill.textContent = project.name.substring(0, 3); pill.title = project.name;
+        pill.textContent = project.name.substring(0, 3);
+        pill.title = project.name;
         pill.className = 'project-pill';
-        pill.style.backgroundColor = project.color;
         pill.dataset.projectId = project.id;
-        if (activeProjectFilter === project.id) pill.classList.add('active');
-        pill.onclick = () => { activeProjectFilter = project.id; updateView(); };
+        // ★変更点: 完了済みでも元の色を維持
+        pill.style.backgroundColor = project.color;
+        if (activeProjectFilter === project.id) {
+            pill.classList.add('active');
+        }
+        pill.onclick = () => {
+            activeProjectFilter = project.id;
+            updateView();
+        };
         projectFilterPillsContainer.appendChild(pill);
     });
+
+    if (completedProjects.length > 0) {
+        const toggleBtn = document.createElement('div');
+        toggleBtn.textContent = showCompletedProjects ? '進行中を表示' : '完了済を表示';
+        toggleBtn.title = showCompletedProjects ? '進行中のプロジェクトを表示' : '完了済みのプロジェクトを表示';
+        toggleBtn.className = 'project-pill completed-projects-btn';
+        toggleBtn.style.backgroundColor = '#6c757d';
+        toggleBtn.onclick = () => {
+            showCompletedProjects = !showCompletedProjects;
+            activeProjectFilter = 'all';
+            updateView();
+        };
+        projectFilterPillsContainer.appendChild(toggleBtn);
+    }
 }
 
 // --- カレンダー関連機能 ---
 function renderCalendar() {
     const events = [];
+    const activeProjects = data.filter(p => !p.done);
     function collectLeafTasks(nodes, project) {
         nodes.forEach(node => {
             const isLeaf = !node.children || node.children.length === 0;
@@ -393,7 +586,7 @@ function renderCalendar() {
             if (node.children) collectLeafTasks(node.children, project);
         });
     }
-    data.forEach(project => collectLeafTasks(project.children, project));
+    activeProjects.forEach(project => collectLeafTasks(project.children, project));
     if (calendarInstance) calendarInstance.destroy();
     calendarInstance = new FullCalendar.Calendar(calendarView, {
         locale: 'ja', initialView: 'dayGridMonth', headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
@@ -418,6 +611,7 @@ function showCalendarTaskPopup(task) {
 function renderTimeline() {
   datedTasksList.innerHTML = ""; undatedTasksList.innerHTML = "";
   const allDatedTasks = [], allUndatedTasks = [];
+  const activeProjects = data.filter(p => !p.done);
   function collectTasks(nodes, project) {
     nodes.forEach(node => {
       const isLeafTask = !node.children || node.children.length === 0;
@@ -430,7 +624,7 @@ function renderTimeline() {
       if (node.children?.length) collectTasks(node.children, project);
     });
   }
-  data.forEach(p => collectTasks(p.children, p));
+  activeProjects.forEach(p => collectTasks(p.children, p));
 
   const datedSeparator = { id: SEPARATOR_DATED_ID, type: 'separator' };
   let listForDatedRendering;
@@ -501,7 +695,12 @@ function createTimelineItem(task, options = { isDraggable: true }) {
   }
   header.addEventListener('click', (e) => {
     e.stopPropagation(); const currentTask = findTaskById(data, task.id);
-    if (currentTask) { const menu = createPopupMenu(currentTask, null, null, "task"); document.body.appendChild(menu); togglePopupMenu(header, menu); }
+    if (currentTask) {
+        const parentProject = findProjectForNode(data, currentTask.id);
+        const menu = createPopupMenu(currentTask, findParent(data, currentTask.id), parentProject?.children.findIndex(c => c.id === currentTask.id), "task");
+        document.body.appendChild(menu);
+        togglePopupMenu(header, menu);
+    }
   });
   const meta = document.createElement('div'); meta.className = 'timeline-item-meta';
   let periodText = '';
@@ -528,49 +727,105 @@ function findTaskPath(nodes, taskId, currentPath = []) {
 // --- 階層リスト描画 ---
 function render() {
   projectList.innerHTML = "";
-  data.forEach((project, index) => { if (activeProjectFilter === "all" || activeProjectFilter === project.id) projectList.appendChild(createProjectElement(project, index)); });
+  const projectsToDisplay = showCompletedProjects
+    ? data.filter(p => p.done)
+    : data.filter(p => !p.done);
+
+  const filteredProjects = projectsToDisplay.filter(project =>
+    activeProjectFilter === "all" || activeProjectFilter === project.id
+  );
+
+  filteredProjects.forEach((project) => {
+    const originalIndex = data.findIndex(p => p.id === project.id);
+    projectList.appendChild(createProjectElement(project, originalIndex));
+  });
+
   initSortable();
 }
+
 function createProjectElement(project, index) {
   const div = document.createElement("div");
   div.className = "project";
+  div.dataset.id = project.id;
   if (project.done) div.classList.add("completed-task");
-  const bar = document.createElement("div"); bar.className = "bar"; bar.style.backgroundColor = project.color || colors[0];
+
+  const bar = document.createElement("div"); bar.className = "bar";
+  // ★変更点: 完了済みでも元の色を維持
+  bar.style.backgroundColor = project.color || colors[0];
+
   const content = document.createElement("div"); content.className = "task-content";
-  const dragHandle = createIconButton("↕️"); dragHandle.classList.add("drag-handle");
+  
+  if (!project.done) {
+      const dragHandle = createIconButton("↕️"); dragHandle.classList.add("drag-handle");
+      content.appendChild(dragHandle);
+  }
+  
   const title = document.createElement("span"); title.textContent = project.name;
   const popupMenu = createPopupMenu(project, null, index, "project"); document.body.appendChild(popupMenu);
   title.addEventListener("click", (e) => { e.stopPropagation(); togglePopupMenu(title, popupMenu); });
-  const addSubBtn = createIconButton("➕", () => { const name = prompt("タスク名:"); if (name) { if (!project.children) project.children = []; project.children.push({ id: generateId(), name, children: [], comment: "", done: false, startDate: "", endDate: "" }); rerenderViews(); } });
-  const colorBtn = createIconButton("🎨", () => { const newColor = prompt("0〜9の色番号を入力:\n" + colors.map((c, i) => `${i}: ${c}`).join("\n")); const idx = parseInt(newColor); if (!isNaN(idx) && colors[idx]) { project.color = colors[idx]; rerenderViews(); } });
-  content.append(dragHandle, colorBtn, title, addSubBtn); div.append(bar, content);
+  content.appendChild(title);
+
+  const addSubBtn = createIconButton("➕", () => {
+      const name = prompt("タスク名:");
+      if (name) {
+          addTaskAndUpdateDOM(project, name);
+      }
+  });
+  content.appendChild(addSubBtn);
+  
+  div.append(bar, content);
+  
   if (project.children) {
     const ul = document.createElement("div"); ul.className = "task-list";
-    project.children.forEach((child, childIndex) => ul.appendChild(createTaskElement(child, project, childIndex, project.color)));
+    // ★変更点: 完了済みでも元の色を維持
+    const colorForTasks = project.color;
+    project.children.forEach((child, childIndex) => ul.appendChild(createTaskElement(child, project, childIndex, colorForTasks)));
     div.appendChild(ul);
   }
   return div;
 }
+
 function createTaskElement(task, parent, index, color) {
-  const div = document.createElement("div"); div.className = "task"; if (task.done) div.classList.add("completed-task");
+  const div = document.createElement("div"); div.className = "task"; div.dataset.id = task.id;
+  if (task.done) div.classList.add("completed-task");
   const isLeaf = !task.children || task.children.length === 0;
   if (isLeaf && !task.done) div.classList.add("leaf-task");
   const bar = document.createElement("div"); bar.className = "bar"; bar.style.backgroundColor = color;
   const content = document.createElement("div"); content.className = "task-content";
+  
+  const isParentProjectDone = findProjectForNode(data, task.id)?.done || false;
+  if (!isParentProjectDone) {
+      const dragHandle = createIconButton("↕️"); dragHandle.classList.add("drag-handle");
+      content.appendChild(dragHandle);
+  }
+
   const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = task.done;
   checkbox.onchange = () => {
     task.done = checkbox.checked;
     updateAllAncestorStatus(task.id);
-    rerenderViews();
+    saveData();
+    updateVisualStatusInDOM(task.id);
   };
-  const dragHandle = createIconButton("↕️"); dragHandle.classList.add("drag-handle");
+  content.appendChild(checkbox);
+
   const title = document.createElement("span"); title.textContent = task.name;
   const popupMenu = createPopupMenu(task, parent, index, "task"); document.body.appendChild(popupMenu);
   title.addEventListener("click", (e) => { e.stopPropagation(); togglePopupMenu(title, popupMenu); });
+  content.appendChild(title);
+
   const periodSpan = document.createElement("span"); periodSpan.style.cssText = "font-size:12px; color:#666; margin-left:6px;";
   if (task.startDate) { const formatDate = d => new Date(d).toLocaleDateString('ja-JP', {month:'numeric', day:'numeric'}); periodSpan.textContent = `(${formatDate(task.startDate)}~${task.endDate ? formatDate(task.endDate) : ''})`; }
-  const addSubBtn = createIconButton("➕", () => { const name = prompt("タスク名:"); if (name) { if (!task.children) task.children = []; task.children.push({ id: generateId(), name, children: [], comment: "", done: false, startDate: task.startDate || "", endDate: task.endDate || "" }); rerenderViews(); } });
-  content.append(dragHandle, checkbox, title, periodSpan, addSubBtn); div.append(bar, content);
+  content.appendChild(periodSpan);
+
+  const addSubBtn = createIconButton("➕", () => {
+      const name = prompt("サブタスク名:");
+      if (name) {
+          addTaskAndUpdateDOM(task, name);
+      }
+  });
+  content.appendChild(addSubBtn);
+
+  div.append(bar, content);
   if (task.comment) { const commentDiv = document.createElement("div"); commentDiv.className = "task-comment"; commentDiv.textContent = task.comment; div.appendChild(commentDiv); }
   if (task.children?.length) {
     const ul = document.createElement("div"); ul.className = "task-list";
@@ -588,12 +843,17 @@ function initSortableForProjectPills() {
     }
     projectFilterPillsContainer.sortableInstance = Sortable.create(projectFilterPillsContainer, {
         animation: 150,
-        filter: '.all-projects-pill',
+        filter: '.all-projects-pill, .completed-projects-btn',
         onEnd: function () {
-            const newIdOrder = Array.from(projectFilterPillsContainer.querySelectorAll('.project-pill:not(.all-projects-pill)'))
-                                    .map(pill => pill.dataset.projectId);
-            const reorderedData = newIdOrder.map(id => data.find(p => p.id === id)).filter(Boolean);
-            data = reorderedData;
+            const newIdOrder = Array.from(projectFilterPillsContainer.querySelectorAll('.project-pill:not(.all-projects-pill):not(.completed-projects-btn)'))
+                                      .map(pill => pill.dataset.projectId);
+            
+            const projectsToReorder = showCompletedProjects ? data.filter(p => p.done) : data.filter(p => !p.done);
+            const otherProjects = showCompletedProjects ? data.filter(p => !p.done) : data.filter(p => p.done);
+
+            const reorderedProjects = newIdOrder.map(id => projectsToReorder.find(p => p.id === id)).filter(Boolean);
+            
+            data = showCompletedProjects ? [...otherProjects, ...reorderedProjects] : [...reorderedProjects, ...otherProjects];
             rerenderViews();
         }
     });
@@ -603,34 +863,54 @@ function initSortableForTimelineColumns() {
   datedTasksList.sortableInstance = Sortable.create(datedTasksList, { animation: 150, handle: ".drag-handle", group: "timelineTasks", onEnd: () => { datedTimelineOrder = Array.from(datedTasksList.querySelectorAll('.timeline-item, .timeline-separator-item')).map(item => item.dataset.taskId); localStorage.setItem("datedTimelineOrder", JSON.stringify(datedTimelineOrder)); } });
   undatedTasksList.sortableInstance = Sortable.create(undatedTasksList, { animation: 150, handle: ".drag-handle", group: "timelineTasks", onEnd: () => { undatedTimelineOrder = Array.from(undatedTasksList.querySelectorAll('.timeline-item, .timeline-separator-item')).map(item => item.dataset.taskId); localStorage.setItem("undatedTimelineOrder", JSON.stringify(undatedTimelineOrder)); } });
 }
-function initSortable() {
-  if (projectList.sortableInstance) projectList.sortableInstance.destroy();
-  projectList.sortableInstance = Sortable.create(projectList, { animation: 150, handle: ".drag-handle", onEnd: (evt) => { const [movedItem] = data.splice(evt.oldIndex, 1); data.splice(evt.newIndex, 0, movedItem); rerenderViews(); } });
-  
-  document.querySelectorAll(".task-list").forEach(list => {
+
+function initSingleSortableList(list) {
     if(list.sortableInstance) list.sortableInstance.destroy();
-    list.sortableInstance = new Sortable(list, { group: 'nested', animation: 150, handle: ".drag-handle", onEnd: (evt) => {
-        const fromParentEl = evt.from.closest('.project, .task');
-        const toParentEl = evt.to.closest('.project, .task');
-        if (fromParentEl !== toParentEl) {
-             alert("異なる階層へのタスク移動は現在サポートされていません。");
-             rerenderViews();
-             return;
-        }
-        const parentId = fromParentEl.dataset.id;
-        const parentNode = parentId ? findTaskById(data, parentId) : null;
-        const parentArray = parentNode ? parentNode.children : data;
-        
-        if (parentArray) {
-            const [movedItem] = parentArray.splice(evt.oldIndex, 1);
-            parentArray.splice(evt.newIndex, 0, movedItem);
+    list.sortableInstance = new Sortable(list, {
+        group: 'nested', animation: 150, handle: ".drag-handle",
+        disabled: showCompletedProjects,
+        onEnd: (evt) => {
+            const fromParentEl = evt.from.closest('.project, .task');
+            const toParentEl = evt.to.closest('.project, .task');
+            const fromParentId = fromParentEl.dataset.id;
+            const toParentId = toParentEl.dataset.id;
+            
+            const fromParentNode = fromParentId ? findTaskById(data, fromParentId) : { children: data };
+            const [movedItem] = fromParentNode.children.splice(evt.oldIndex, 1);
+
+            const toParentNode = toParentId ? findTaskById(data, toParentId) : { children: data };
+            if (!toParentNode.children) toParentNode.children = [];
+            toParentNode.children.splice(evt.newIndex, 0, movedItem);
+            
+            updateAllAncestorStatus(movedItem.id);
+            if (fromParentId !== toParentId) {
+                if(fromParentNode.id) updateAllAncestorStatus(fromParentNode.id);
+            }
             rerenderViews();
-        } else {
-            rerenderViews();
         }
-      }
     });
-  });
+}
+
+function initSortable() {
+    if (projectList.sortableInstance) projectList.sortableInstance.destroy();
+    projectList.sortableInstance = Sortable.create(projectList, {
+        animation: 150, handle: ".drag-handle",
+        disabled: showCompletedProjects,
+        onEnd: (evt) => {
+            const projectsToMove = showCompletedProjects ? data.filter(p => p.done) : data.filter(p => !p.done);
+            const otherProjects = showCompletedProjects ? data.filter(p => !p.done) : data.filter(p => p.done);
+    
+            const [movedItem] = projectsToMove.splice(evt.oldIndex, 1);
+            projectsToMove.splice(evt.newIndex, 0, movedItem);
+
+            data = showCompletedProjects ? [...otherProjects, ...projectsToMove] : [...projectsToMove, ...otherProjects];
+            rerenderViews();
+        }
+    });
+    
+    document.querySelectorAll(".task-list").forEach(list => {
+        initSingleSortableList(list);
+    });
 }
 
 // --- 初期化 ---
