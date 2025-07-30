@@ -224,6 +224,14 @@
     .timeline-item input[type="checkbox"] { width: 20px; height: 20px; flex-shrink: 0; cursor: default; }
     #calendarView { display: none; margin-top: 16px; }
     .fc-event { border: none !important; }
+    .fc-event.completed-calendar-event {
+        background-color: #a9a9a9 !important;
+        border-color: #a9a9a9 !important;
+        color: white !important;
+    }
+    .completed-calendar-event .fc-event-title {
+        text-decoration: line-through;
+    }
 
   </style>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -544,7 +552,6 @@ function renderProjectFilterPills() {
         pill.title = project.name;
         pill.className = 'project-pill';
         pill.dataset.projectId = project.id;
-        // ★変更点: 完了済みでも元の色を維持
         pill.style.backgroundColor = project.color;
         if (activeProjectFilter === project.id) {
             pill.classList.add('active');
@@ -572,33 +579,91 @@ function renderProjectFilterPills() {
 }
 
 // --- カレンダー関連機能 ---
+// ★★★ 変更箇所 ★★★
 function renderCalendar() {
-    const events = [];
-    const activeProjects = data.filter(p => !p.done);
-    function collectLeafTasks(nodes, project) {
-        nodes.forEach(node => {
-            const isLeaf = !node.children || node.children.length === 0;
-            if (!node.done && isLeaf && node.startDate) {
-                if (activeProjectFilter === 'all' || project.id === activeProjectFilter) {
-                    events.push({ title: node.name, start: node.startDate, end: node.endDate ? new Date(new Date(node.endDate).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] : null, allDay: true, color: project.color, extendedProps: { taskId: node.id } });
-                }
-            }
-            if (node.children) collectLeafTasks(node.children, project);
-        });
+    if (calendarInstance) {
+        calendarInstance.destroy();
     }
-    activeProjects.forEach(project => collectLeafTasks(project.children, project));
-    if (calendarInstance) calendarInstance.destroy();
+
     calendarInstance = new FullCalendar.Calendar(calendarView, {
-        locale: 'ja', initialView: 'dayGridMonth', headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
-        events: events,
+        locale: 'ja',
+        initialView: 'dayGridMonth',
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
+        editable: true,
+        
+        // eventsプロパティに関数を指定し、カレンダー更新時に常に最新のデータを読み込むように修正
+        events: function(fetchInfo, successCallback, failureCallback) {
+            const eventArray = [];
+            const projectsToScan = data; // 全てのプロジェクトを対象
+
+            function collectLeafTasksRecursive(nodes, project) {
+                nodes.forEach(node => {
+                    const isLeaf = !node.children || node.children.length === 0;
+                    if (isLeaf) {
+                        if (activeProjectFilter === 'all' || project.id === activeProjectFilter) {
+                            if (node.done && node.completedDate) {
+                                eventArray.push({
+                                    title: node.name,
+                                    start: node.completedDate,
+                                    allDay: true,
+                                    extendedProps: { taskId: node.id },
+                                    classNames: ['completed-calendar-event']
+                                });
+                            } 
+                            else if (!node.done && node.startDate) {
+                                eventArray.push({
+                                    title: node.name,
+                                    start: node.startDate,
+                                    end: node.endDate ? new Date(new Date(node.endDate).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] : null,
+                                    allDay: true,
+                                    color: project.color,
+                                    extendedProps: { taskId: node.id }
+                                });
+                            }
+                        }
+                    }
+                    if (node.children) {
+                        collectLeafTasksRecursive(node.children, project);
+                    }
+                });
+            }
+
+            projectsToScan.forEach(project => {
+                collectLeafTasksRecursive(project.children, project);
+            });
+            
+            successCallback(eventArray);
+        },
+
+        eventDrop: (info) => {
+            const task = findTaskById(data, info.event.extendedProps.taskId);
+            if (!task) return;
+            const newStartDate = info.event.startStr;
+            if (task.done) {
+                task.completedDate = newStartDate;
+            }
+            task.startDate = newStartDate;
+            if (info.event.end) {
+                const endDate = new Date(info.event.end);
+                endDate.setDate(endDate.getDate() - 1);
+                task.endDate = endDate.toISOString().split('T')[0];
+            } else {
+                task.endDate = newStartDate;
+            }
+            saveData();
+            calendarInstance.refetchEvents();
+        },
+
         eventClick: (info) => {
             info.jsEvent.preventDefault();
             const task = findTaskById(data, info.event.extendedProps.taskId);
             if (task) showCalendarTaskPopup(task);
         }
     });
+
     calendarInstance.render();
 }
+
 function showCalendarTaskPopup(task) {
     const bg = document.createElement('div'); bg.id = 'calendar-task-popup-bg';
     const content = document.createElement('div'); content.id = 'calendar-task-popup-content';
@@ -678,9 +743,22 @@ function createTimelineItem(task, options = { isDraggable: true }) {
     const targetTask = findTaskById(data, e.target.dataset.taskId);
     if (targetTask) {
         targetTask.done = e.target.checked;
+        if (targetTask.done) {
+            targetTask.completedDate = new Date().toISOString().split('T')[0];
+        } else {
+            targetTask.completedDate = null;
+        }
         updateAllAncestorStatus(targetTask.id);
         saveData();
         item.classList.toggle('is-done', e.target.checked);
+        
+        if (currentView === 'calendar') {
+            calendarInstance.refetchEvents();
+            const popup = document.getElementById('calendar-task-popup-bg');
+            if (popup) {
+                document.body.removeChild(popup);
+            }
+        }
     }
   };
   const content = document.createElement('div'); content.className = 'timeline-item-content';
@@ -750,7 +828,6 @@ function createProjectElement(project, index) {
   if (project.done) div.classList.add("completed-task");
 
   const bar = document.createElement("div"); bar.className = "bar";
-  // ★変更点: 完了済みでも元の色を維持
   bar.style.backgroundColor = project.color || colors[0];
 
   const content = document.createElement("div"); content.className = "task-content";
@@ -777,7 +854,6 @@ function createProjectElement(project, index) {
   
   if (project.children) {
     const ul = document.createElement("div"); ul.className = "task-list";
-    // ★変更点: 完了済みでも元の色を維持
     const colorForTasks = project.color;
     project.children.forEach((child, childIndex) => ul.appendChild(createTaskElement(child, project, childIndex, colorForTasks)));
     div.appendChild(ul);
@@ -802,9 +878,17 @@ function createTaskElement(task, parent, index, color) {
   const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = task.done;
   checkbox.onchange = () => {
     task.done = checkbox.checked;
+    if (task.done) {
+        task.completedDate = new Date().toISOString().split('T')[0];
+    } else {
+        task.completedDate = null;
+    }
     updateAllAncestorStatus(task.id);
     saveData();
     updateVisualStatusInDOM(task.id);
+    if (currentView === 'calendar') {
+        calendarInstance.refetchEvents();
+    }
   };
   content.appendChild(checkbox);
 
@@ -846,7 +930,7 @@ function initSortableForProjectPills() {
         filter: '.all-projects-pill, .completed-projects-btn',
         onEnd: function () {
             const newIdOrder = Array.from(projectFilterPillsContainer.querySelectorAll('.project-pill:not(.all-projects-pill):not(.completed-projects-btn)'))
-                                      .map(pill => pill.dataset.projectId);
+                                        .map(pill => pill.dataset.projectId);
             
             const projectsToReorder = showCompletedProjects ? data.filter(p => p.done) : data.filter(p => !p.done);
             const otherProjects = showCompletedProjects ? data.filter(p => !p.done) : data.filter(p => p.done);
