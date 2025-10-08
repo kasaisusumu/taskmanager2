@@ -1001,5 +1001,30 @@ function initSortable() {
 initializeNodes(data);
 updateView();
 </script>
+
+  <script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyBsGKvMYAkBKnj2es349pLVyBSpwlZKdO0",
+    authDomain: "firsttry1-2f932.firebaseapp.com",
+    projectId: "firsttry1-2f932",
+    storageBucket: "firsttry1-2f932.firebasestorage.app",
+    messagingSenderId: "915787263483",
+    appId: "1:915787263483:web:f1615d5f30f81a000c6f5e",
+    measurementId: "G-8ZMZ9M954T"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
 </body>
 </html>
+
