@@ -1,3 +1,4 @@
+/* Googleアカウントでログインに挑戦*/
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -6,238 +7,98 @@
   <title>タスク管理（カレンダー機能付き）</title>
   <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
   <style>
-    :root {
-      --bar-width: 5px;
-      --project-margin: 6px;
-      --task-padding: 8px;
-      --indent-size: 4px;
-    }
-
-    body {
-      font-family: sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f7f7f7;
-    }
-
-    #app {
-      padding: 16px;
-      max-width: 960px;
-      margin: auto;
-    }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-      flex-wrap: wrap;
-      gap: 12px;
-      position: sticky;
-      top: 0;
-      background-color: #f7f7f7;
-      z-index: 500;
-      padding: 12px 0;
-    }
-    
-    .header-group {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: 1.4em;
-    }
-
-    button {
-      cursor: pointer;
-      background-color: #4CAF50;
-      border: none;
-      color: white;
-      padding: 6px 12px;
-      border-radius: 4px;
-      font-size: 14px;
-    }
-    #addProjectBtn{
-      padding: 6px;
-      font-size: 18px;
-      line-height: 1;
-    }
-
-    #view-switcher button {
-        background-color: #e0e0e0;
-        color: #333;
-        border: 1px solid #ccc;
-    }
-    #view-switcher button.active {
-        background-color: #4CAF50;
-        color: white;
-        border-color: #4CAF50;
-    }
-    #project-filter-pills-container {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin-top: 8px;
-        width: 100%;
-        cursor: grab;
-    }
-
-    .project-pill {
-        padding: 5px 12px;
-        border-radius: 15px;
-        cursor: pointer;
-        font-size: 13px;
-        border: 2px solid transparent;
-        color: white;
-        flex-shrink: 0;
-        transition: all 0.2s ease-in-out;
-        opacity: 0.75;
-    }
-    .project-pill:not(.active):hover {
-        opacity: 1;
-        transform: translateY(-2px);
-    }
-    .project-pill.active {
-        border-color: #000;
-        font-weight: bold;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        transform: scale(1.1);
-        opacity: 1;
-    }
-    .project-pill.completed-projects-btn {
-        margin-left: auto;
-        opacity: 1;
-    }
-
-    #calendar-task-popup-bg {
-        position: fixed; top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(0,0,0,0.4);
-        display: flex; align-items: center; justify-content: center;
-        z-index: 10000;
-    }
-    #calendar-task-popup-content {
-        background: #f7f7f7; padding: 12px;
-        border-radius: 8px; width: 90%; max-width: 500px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    }
-    
-    .project, .task {
-      background-color: white; border-radius: 5px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1); position: relative;
-      margin-top: var(--project-margin);
-      padding: var(--task-padding) var(--task-padding) 4px var(--task-padding);
-    }
-    .bar {
-      width: var(--bar-width); height: 100%; position: absolute;
-      left: 0; top: 0; border-top-left-radius: 5px; border-bottom-left-radius: 5px;
-    }
-    .task-content {
-      margin-left: calc(var(--bar-width) + 8px); display: flex;
-      align-items: center; flex-wrap: wrap; gap: 1px;
-    }
-    .task-comment {
-      font-size: 12px; color: #666; margin-left: calc(var(--bar-width) + 8px);
-      padding: 4px 0; white-space: pre-wrap; word-break: break-word;
-    }
-    .task-list {
-      margin-left: var(--indent-size); padding-left: 2px;
-      border-left: 1px dashed #ccc; margin-top: 4px;
-    }
-    .icon-btn, .drag-handle {
-      background: none; border: none; font-size: 16px;
-      cursor: pointer; padding: 4px;
-    }
+    :root { --bar-width: 5px; --project-margin: 6px; --task-padding: 8px; --indent-size: 4px; }
+    body { font-family: sans-serif; margin: 0; padding: 0; background: #f7f7f7; }
+    #app { padding: 16px; max-width: 960px; margin: auto; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 12px; position: sticky; top: 0; background-color: #f7f7f7; z-index: 500; padding: 12px 0; }
+    .header-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    h1 { margin: 0; font-size: 1.4em; }
+    button { cursor: pointer; background-color: #4CAF50; border: none; color: white; padding: 6px 12px; border-radius: 4px; font-size: 14px; }
+    #addProjectBtn{ padding: 6px; font-size: 18px; line-height: 1; }
+    #view-switcher button { background-color: #e0e0e0; color: #333; border: 1px solid #ccc; }
+    #view-switcher button.active { background-color: #4CAF50; color: white; border-color: #4CAF50; }
+    #project-filter-pills-container { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; width: 100%; cursor: grab; }
+    .project-pill { padding: 5px 12px; border-radius: 15px; cursor: pointer; font-size: 13px; border: 2px solid transparent; color: white; flex-shrink: 0; transition: all 0.2s ease-in-out; opacity: 0.75; }
+    .project-pill:not(.active):hover { opacity: 1; transform: translateY(-2px); }
+    .project-pill.active { border-color: #000; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.3); transform: scale(1.1); opacity: 1; }
+    .project-pill.completed-projects-btn { margin-left: auto; opacity: 1; }
+    #calendar-task-popup-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 10000; }
+    #calendar-task-popup-content { background: #f7f7f7; padding: 12px; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+    .project, .task { background-color: white; border-radius: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); position: relative; margin-top: var(--project-margin); padding: var(--task-padding) var(--task-padding) 4px var(--task-padding); }
+    .bar { width: var(--bar-width); height: 100%; position: absolute; left: 0; top: 0; border-top-left-radius: 5px; border-bottom-left-radius: 5px; }
+    .task-content { margin-left: calc(var(--bar-width) + 8px); display: flex; align-items: center; flex-wrap: wrap; gap: 1px; }
+    .task-comment { font-size: 12px; color: #666; margin-left: calc(var(--bar-width) + 8px); padding: 4px 0; white-space: pre-wrap; word-break: break-word; }
+    .task-list { margin-left: var(--indent-size); padding-left: 2px; border-left: 1px dashed #ccc; margin-top: 4px; }
+    .icon-btn, .drag-handle { background: none; border: none; font-size: 16px; cursor: pointer; padding: 4px; }
     .drag-handle { cursor: grab; }
-    .popup-menu {
-      position: absolute; background: white; border: 1px solid #ccc;
-      border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      padding: 4px 6px; display: none; 
-      z-index: 10001; 
-    }
-    .popup-menu button {
-      background: none; border: none; cursor: pointer;
-      font-size: 16px; margin: 0 3px; padding: 2px; color: #333;
-    }
-    .popup-menu .color-picker-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 5px;
-        padding: 5px;
-        max-width: 130px;
-        margin-top: 5px;
-        background-color: #f8f9fa;
-        border-radius: 4px;
-        border-top: 1px solid #eee;
-    }
-    .popup-menu .color-picker-option {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        cursor: pointer;
-        border: 2px solid transparent;
-        box-sizing: border-box;
-        transition: transform 0.2s;
-    }
-    .popup-menu .color-picker-option:hover {
-        transform: scale(1.1);
-    }
-    .popup-menu .color-picker-option.selected {
-        border-color: #333;
-    }
+    .popup-menu { position: absolute; background: white; border: 1px solid #ccc; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); padding: 4px 6px; display: none; z-index: 10001; }
+    .popup-menu button { background: none; border: none; cursor: pointer; font-size: 16px; margin: 0 3px; padding: 2px; color: #333; }
+    .popup-menu .color-picker-container { display: flex; flex-wrap: wrap; gap: 5px; padding: 5px; max-width: 130px; margin-top: 5px; background-color: #f8f9fa; border-radius: 4px; border-top: 1px solid #eee; }
+    .popup-menu .color-picker-option { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; box-sizing: border-box; transition: transform 0.2s; }
+    .popup-menu .color-picker-option:hover { transform: scale(1.1); }
+    .popup-menu .color-picker-option.selected { border-color: #333; }
     .completed-title { text-decoration: line-through; color: #888; }
     .project > .task-list, .task > .task-list { margin-bottom: 4px; }
     .task > .task-content > span.leaf-task { text-decoration: underline; }
     .leaf-task { font-weight: bold; background-color: #fffceb; }
     .completed-task { background-color: #f0f0f0; color: #888; }
     .completed-task .task-content span { text-decoration: line-through; }
-
     #timelineView { display: none; display: flex; gap: 16px; }
     .timeline-column { flex: 1; min-width: 0; position: relative; padding-top: 8px; }
-    .timeline-column h2 {
-      font-size: 1.1em; margin-top: 0; color: #555;
-      border-bottom: 2px solid #eee; padding-bottom: 8px;
-    }
+    .timeline-column h2 { font-size: 1.1em; margin-top: 0; color: #555; border-bottom: 2px solid #eee; padding-bottom: 8px; }
     .timeline-separator-item { display: flex; align-items: center; height: 22px; cursor: grab; }
     .timeline-separator-item .separator-line { height: 2px; background-color: red; width: 100%; }
     .timeline-separator-item .drag-handle { flex-shrink: 0; padding-right: 8px; }
-
-    .timeline-item {
-      display: flex; align-items: center; gap: 10px; background-color: white;
-      padding: 10px 15px; margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-      border-radius: 4px; transition: background-color 0.3s;
-    }
+    .timeline-item { display: flex; align-items: center; gap: 10px; background-color: white; padding: 10px 15px; margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); border-radius: 4px; transition: background-color 0.3s; }
     .timeline-item.is-done { background-color: #f0f0f0; }
     .timeline-item.is-done .timeline-item-header { text-decoration: line-through; color: #888; }
     .timeline-item-content { flex-grow: 1; border-left: 5px solid; padding-left: 10px; }
-    .timeline-item-header {
-      font-weight: bold; font-size: 1.1em; margin-bottom: 4px; cursor: pointer;
-    }
+    .timeline-item-header { font-weight: bold; font-size: 1.1em; margin-bottom: 4px; cursor: pointer; }
     .timeline-item-meta { font-size: 0.9em; color: #555; }
-    .timeline-comment-display {
-      margin-top: 4px; font-size: 0.95em; white-space: pre-wrap; word-break: break-word;
-    }
+    .timeline-comment-display { margin-top: 4px; font-size: 0.95em; white-space: pre-wrap; word-break: break-word; }
     .timeline-item input[type="checkbox"] { width: 20px; height: 20px; flex-shrink: 0; cursor: default; }
     #calendarView { display: none; margin-top: 16px; }
     .fc-event { border: none !important; }
-    .fc-event.completed-calendar-event {
-        background-color: #a9a9a9 !important;
-        border-color: #a9a9a9 !important;
-        color: white !important;
-    }
-    .completed-calendar-event .fc-event-title {
-        text-decoration: line-through;
-    }
+    .fc-event.completed-calendar-event { background-color: #a9a9a9 !important; border-color: #a9a9a9 !important; color: white !important; }
+    .completed-calendar-event .fc-event-title { text-decoration: line-through; }
+    .hidden { display: none !important; }
 
+    /* --- FIREBASE 認証画面のスタイル --- */
+    #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f7f7f7; display: flex; align-items: center; justify-content: center; z-index: 10000; }
+    #auth-container { background: white; padding: 32px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); text-align: center; }
+    #auth-container h2 { margin-top: 0; margin-bottom: 24px; }
+    #google-signin-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        background-color: #fff;
+        color: #444;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px 24px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s, box-shadow 0.2s;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    #google-signin-btn:hover { background-color: #f5f5f5; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    #google-signin-btn img { width: 20px; height: 20px; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 <body>
-  <div id="app">
+  <div id="auth-overlay">
+    <div id="auth-container">
+      <h2>タスク管理</h2>
+      <button id="google-signin-btn">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google icon">
+        <span>Googleでログイン</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="app" class="hidden">
     <header>
         <div class="header-group"><h1>タスク管理</h1>
             <div id="view-switcher">
@@ -246,7 +107,10 @@
                 <button data-view="calendar" class="view-btn">カレンダー</button>
             </div>
         </div>
-        <div class="header-group"><button id="addProjectBtn">＋</button></div>
+        <div class="header-group">
+          <button id="addProjectBtn">＋</button>
+          <button id="logoutBtn" style="background-color: #f44336;" class="hidden">ログアウト</button>
+        </div>
         <div id="project-filter-pills-container"></div>
     </header>
 
@@ -258,53 +122,184 @@
     <main id="calendarView"></main>
   </div>
 
-<script>
-// --- グローバル変数 ---
-let data = JSON.parse(localStorage.getItem("taskData")) || [];
-let datedTimelineOrder = JSON.parse(localStorage.getItem("datedTimelineOrder")) || [];
-let undatedTimelineOrder = JSON.parse(localStorage.getItem("undatedTimelineOrder")) || [];
-let currentView = 'list'; let calendarInstance = null; let activeProjectFilter = 'all';
-let showCompletedProjects = false;
 
-// --- 定数 ---
-const SEPARATOR_DATED_ID = 'separator-dated-item'; const SEPARATOR_UNDATED_ID = 'separator-undated-item';
-const colors = ['#FF5722', '#4CAF50', '#2196F3', '#FFC107', '#9C27B0', '#00BCD4', '#FF9800', '#E91E63', '#795548', '#3F51B5'];
+<script type="module">
+  // Firebase SDKから必要な関数をインポート
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getAuth,
+    onAuthStateChanged,
+    GoogleAuthProvider, // Google認証プロバイダを追加
+    signInWithPopup,    // ポップアップ認証方式を追加
+    signOut
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import {
+    getFirestore,
+    doc,
+    setDoc,
+    onSnapshot
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// --- DOM要素 ---
-const projectList = document.getElementById("projectList"); const timelineView = document.getElementById("timelineView");
-const calendarView = document.getElementById("calendarView"); const datedTasksList = document.getElementById("dated-tasks-list");
-const undatedTasksList = document.getElementById("undated-tasks-list"); const addProjectBtn = document.getElementById("addProjectBtn");
-const viewSwitcher = document.getElementById("view-switcher"); const projectFilterPillsContainer = document.getElementById("project-filter-pills-container");
+  // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+  // ★ あなたのFirebaseプロジェクトの設定情報に書き換えてください ★
+  // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+  const firebaseConfig = {
+    apiKey: "AIzaSyBsGKvMYAkBKnj2es349pLVyBSpwlZKdO0",
+    authDomain: "firsttry1-2f932.firebaseapp.com",
+    projectId: "firsttry1-2f932",
+    storageBucket: "firsttry1-2f932.firebasestorage.app",
+    messagingSenderId: "915787263483",
+    appId: "1:915787263483:web:f1615d5f30f81a000c6f5e",
+    measurementId: "G-8ZMZ9M954T"
+  };
 
-// --- ID管理と初期化 ---
-const generateId = () => `id_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-function initializeNodes(nodes) {
-    nodes.forEach(node => {
-        if (!node.id) node.id = generateId();
-        if (typeof node.done === 'undefined') node.done = false;
-        if (node.children) initializeNodes(node.children);
+  // Firebaseを初期化
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // --- グローバル変数 ---
+  let data = [];
+  let datedTimelineOrder = [];
+  let undatedTimelineOrder = [];
+  let currentView = 'list'; let calendarInstance = null; let activeProjectFilter = 'all';
+  let showCompletedProjects = false;
+  let currentUser = null; // ログイン中のユーザー情報を保持
+  let unsubscribe; // Firestoreのリスナーを解除するための変数
+
+  // --- 定数 ---
+  const SEPARATOR_DATED_ID = 'separator-dated-item'; const SEPARATOR_UNDATED_ID = 'separator-undated-item';
+  const colors = ['#FF5722', '#4CAF50', '#2196F3', '#FFC107', '#9C27B0', '#00BCD4', '#FF9800', '#E91E63', '#795548', '#3F51B5'];
+
+  // --- DOM要素 ---
+  const projectList = document.getElementById("projectList"); const timelineView = document.getElementById("timelineView");
+  const calendarView = document.getElementById("calendarView"); const datedTasksList = document.getElementById("dated-tasks-list");
+  const undatedTasksList = document.getElementById("undated-tasks-list"); const addProjectBtn = document.getElementById("addProjectBtn");
+  const viewSwitcher = document.getElementById("view-switcher"); const projectFilterPillsContainer = document.getElementById("project-filter-pills-container");
+  
+  // --- FIREBASE 関連のDOM要素 ---
+  const authOverlay = document.getElementById('auth-overlay');
+  const appContainer = document.getElementById('app');
+  const googleSignInBtn = document.getElementById('google-signin-btn');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  // --- FIREBASE 認証状態の監視 ---
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      // ログイン成功
+      currentUser = user;
+      authOverlay.classList.add('hidden');
+      appContainer.classList.remove('hidden');
+      logoutBtn.classList.remove('hidden');
+      loadDataFromFirestore(user.uid); // Firestoreからデータを読み込む
+    } else {
+      // ログアウト状態
+      currentUser = null;
+      authOverlay.classList.remove('hidden');
+      appContainer.classList.add('hidden');
+      logoutBtn.classList.add('hidden');
+      
+      // データとリスナーをクリア
+      if (unsubscribe) {
+        unsubscribe();
+      }
+      data = [];
+      updateView(); // UIを空の状態に更新
+    }
+  });
+  
+  // --- FIREBASE 認証イベントリスナー ---
+  googleSignInBtn.addEventListener('click', () => {
+    const provider = new GoogleAuthProvider(); // Google認証プロバイダを作成
+    signInWithPopup(auth, provider)
+      .catch((error) => {
+        // ユーザーがポップアップを閉じた場合などのエラー処理
+        console.error("Google Sign-In Error:", error);
+      });
+  });
+
+  logoutBtn.addEventListener('click', () => {
+    signOut(auth);
+  });
+
+  // --- FIREBASE データ保存と読み込み ---
+  // Firestoreからデータを読み込む（リアルタイム）
+  function loadDataFromFirestore(userId) {
+    const userDocRef = doc(db, 'users', userId); // usersコレクションの、ユーザーID名のドキュメントを参照
+    
+    // 以前のリスナーがもしあれば解除
+    if (unsubscribe) {
+      unsubscribe();
+    }
+
+    unsubscribe = onSnapshot(userDocRef, (doc) => {
+      if (doc.exists()) {
+        const firestoreData = doc.data();
+        data = firestoreData.projects || [];
+        datedTimelineOrder = firestoreData.datedTimelineOrder || [];
+        undatedTimelineOrder = firestoreData.undatedTimelineOrder || [];
+      } else {
+        // ドキュメントが存在しない場合（新規ユーザー）は初期化
+        data = [];
+        datedTimelineOrder = [];
+        undatedTimelineOrder = [];
+      }
+      initializeNodes(data);
+      updateView();
     });
-}
+  }
 
-// --- イベントリスナー ---
-viewSwitcher.addEventListener("click", (e) => { if (e.target.tagName === 'BUTTON') { currentView = e.target.dataset.view; updateView(); } });
-addProjectBtn.onclick = () => {
+  // Firestoreにデータを保存する（localStorageの代わり）
+  async function saveData() {
+    if (!currentUser) return; // ログインしていなければ何もしない
+
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    try {
+      // プロジェクトデータとタイムラインの並び順を保存
+      await setDoc(userDocRef, { 
+        projects: data,
+        datedTimelineOrder: datedTimelineOrder,
+        undatedTimelineOrder: undatedTimelineOrder
+      });
+    } catch (error) {
+      console.error("Error saving data to Firestore: ", error);
+    }
+  }
+
+  // --- 元のアプリのロジック（saveDataの呼び出しはFirestore版に置き換わる） ---
+
+  function rerenderViews() { 
+    saveData(); // この関数がFirestoreに保存するようになった
+    updateView(); 
+  }
+
+  // --- ID管理と初期化 ---
+  const generateId = () => `id_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  function initializeNodes(nodes) {
+    nodes.forEach(node => {
+      if (!node.id) node.id = generateId();
+      if (typeof node.done === 'undefined') node.done = false;
+      if (node.children) initializeNodes(node.children);
+    });
+  }
+
+  // --- イベントリスナー ---
+  viewSwitcher.addEventListener("click", (e) => { if (e.target.tagName === 'BUTTON') { currentView = e.target.dataset.view; updateView(); } });
+  addProjectBtn.onclick = () => {
     const name = prompt("プロジェクト名:");
     if (name) {
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        data.push({ id: generateId(), name, children: [], color, done: false });
-        rerenderViews();
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      data.push({ id: generateId(), name, children: [], color, done: false });
+      rerenderViews();
     }
-};
-document.addEventListener('click', (e) => {
+  };
+  document.addEventListener('click', (e) => {
     if (!e.target.closest('.popup-menu') && !e.target.closest('.timeline-item-header') && !e.target.closest('.task-content span')) closePopupMenus();
     if (e.target.id === 'calendar-task-popup-bg') document.body.removeChild(e.target);
-});
+  });
 
-// --- データ保存と描画管理 ---
-function saveData() { localStorage.setItem("taskData", JSON.stringify(data)); }
-function rerenderViews() { saveData(); updateView(); }
-function updateView() {
+  // --- 描画管理 ---
+  function updateView() {
     projectList.style.display = "none"; timelineView.style.display = "none"; calendarView.style.display = "none";
     viewSwitcher.querySelector('.active')?.classList.remove('active');
     viewSwitcher.querySelector(`[data-view="${currentView}"]`).classList.add('active');
@@ -320,57 +315,57 @@ function updateView() {
         case 'timeline': timelineView.style.display = "flex"; renderTimeline(); break;
         case 'calendar': calendarView.style.display = "block"; renderCalendar(); break;
     }
-}
+  }
 
-// --- データ検索・操作 ---
-function findTaskById(nodes, id) { for (const node of nodes) { if (node.id === id) return node; if (node.children) { const found = findTaskById(node.children, id); if (found) return found; } } return null; }
-function findAndRemoveTaskById(nodes, id) { for (let i = 0; i < nodes.length; i++) { if (nodes[i].id === id) { nodes.splice(i, 1); return true; } if (nodes[i].children && findAndRemoveTaskById(nodes[i].children, id)) return true; } return false; }
-function findProjectForNode(projects, nodeId) { for (const project of projects) { if (findTaskById([project], nodeId)) return project; } return null; }
-function findParent(nodes, childId, parentOfNodes = null) { for (const node of nodes) { if (node.id === childId) return parentOfNodes; if (node.children) { const found = findParent(node.children, childId, node); if (found) return found; } } return null; }
-function updateAllAncestorStatus(startNodeId) {
+  // --- データ検索・操作 ---
+  function findTaskById(nodes, id) { for (const node of nodes) { if (node.id === id) return node; if (node.children) { const found = findTaskById(node.children, id); if (found) return found; } } return null; }
+  function findAndRemoveTaskById(nodes, id) { for (let i = 0; i < nodes.length; i++) { if (nodes[i].id === id) { nodes.splice(i, 1); return true; } if (nodes[i].children && findAndRemoveTaskById(nodes[i].children, id)) return true; } return false; }
+  function findProjectForNode(projects, nodeId) { for (const project of projects) { if (findTaskById([project], nodeId)) return project; } return null; }
+  function findParent(nodes, childId, parentOfNodes = null) { for (const node of nodes) { if (node.id === childId) return parentOfNodes; if (node.children) { const found = findParent(node.children, childId, node); if (found) return found; } } return null; }
+  function updateAllAncestorStatus(startNodeId) {
     let parent = findParent(data, startNodeId);
     while(parent) {
-        const allChildrenDone = parent.children && parent.children.length > 0 && parent.children.every(child => child.done);
-        if (parent.done !== allChildrenDone) {
-            parent.done = allChildrenDone;
-            parent = findParent(data, parent.id);
-        } else {
-            break;
-        }
+      const allChildrenDone = parent.children && parent.children.length > 0 && parent.children.every(child => child.done);
+      if (parent.done !== allChildrenDone) {
+        parent.done = allChildrenDone;
+        parent = findParent(data, parent.id);
+      } else {
+        break;
+      }
     }
-}
+  }
 
-function updateVisualStatusInDOM(startNodeId) {
+  function updateVisualStatusInDOM(startNodeId) {
     let node = findTaskById(data, startNodeId);
     if (!node) return;
 
     let element = document.querySelector(`[data-id="${startNodeId}"]`);
     if (element) {
-        element.classList.toggle('completed-task', node.done);
+      element.classList.toggle('completed-task', node.done);
     }
 
     let parent = findParent(data, startNodeId);
     while(parent) {
-        const parentElement = document.querySelector(`[data-id="${parent.id}"]`);
-        if (parentElement) {
-            parentElement.classList.toggle('completed-task', parent.done);
-        }
-        if (!findParent(data, parent.id)) {
-            break;
-        }
-        parent = findParent(data, parent.id);
+      const parentElement = document.querySelector(`[data-id="${parent.id}"]`);
+      if (parentElement) {
+        parentElement.classList.toggle('completed-task', parent.done);
+      }
+      if (!findParent(data, parent.id)) {
+        break;
+      }
+      parent = findParent(data, parent.id);
     }
-}
+  }
 
-function addTaskAndUpdateDOM(parent, taskName) {
+  function addTaskAndUpdateDOM(parent, taskName) {
     if (!parent.children) parent.children = [];
     const newTask = { id: generateId(), name: taskName, children: [], comment: "", done: false, startDate: parent.startDate || "", endDate: parent.endDate || "" };
     parent.children.push(newTask);
 
     const wasParentDone = parent.done;
     if (wasParentDone) {
-        parent.done = false;
-        updateAllAncestorStatus(parent.id);
+      parent.done = false;
+      updateAllAncestorStatus(parent.id);
     }
     
     saveData();
@@ -380,9 +375,9 @@ function addTaskAndUpdateDOM(parent, taskName) {
 
     let taskListEl = parentEl.querySelector('.task-list');
     if (!taskListEl) {
-        taskListEl = document.createElement("div");
-        taskListEl.className = "task-list";
-        parentEl.appendChild(taskListEl);
+      taskListEl = document.createElement("div");
+      taskListEl.className = "task-list";
+      parentEl.appendChild(taskListEl);
     }
     
     const project = findProjectForNode(data, parent.id) || parent;
@@ -392,141 +387,141 @@ function addTaskAndUpdateDOM(parent, taskName) {
     taskListEl.appendChild(newTaskEl);
     
     if (!taskListEl.sortableInstance) {
-        initSingleSortableList(taskListEl);
+      initSingleSortableList(taskListEl);
     }
 
     if (wasParentDone) {
-        let current = parent;
-        while(current) {
-            const currentEl = document.querySelector(`[data-id="${current.id}"]`);
-            if (currentEl) {
-                currentEl.classList.remove('completed-task');
-                const bar = currentEl.querySelector('.bar');
-                if (bar) {
-                    const projectForBar = findProjectForNode(data, current.id) || current;
-                    bar.style.backgroundColor = projectForBar.color || colors[0];
-                }
-            }
-            current = findParent(data, current.id);
+      let current = parent;
+      while(current) {
+        const currentEl = document.querySelector(`[data-id="${current.id}"]`);
+        if (currentEl) {
+          currentEl.classList.remove('completed-task');
+          const bar = currentEl.querySelector('.bar');
+          if (bar) {
+            const projectForBar = findProjectForNode(data, current.id) || current;
+            bar.style.backgroundColor = projectForBar.color || colors[0];
+          }
         }
+        current = findParent(data, current.id);
+      }
     }
-}
+  }
 
 
-// --- ポップアップメニュー ---
-function createPopupMenu(taskOrProject, parent, index, type) {
-  const menu = document.createElement("div"); menu.className = "popup-menu";
-  
-  if (type === "project" && taskOrProject.done) {
+  // --- ポップアップメニュー ---
+  function createPopupMenu(taskOrProject, parent, index, type) {
+    const menu = document.createElement("div"); menu.className = "popup-menu";
+    
+    if (type === "project" && taskOrProject.done) {
       const restoreBtn = document.createElement("button");
       restoreBtn.textContent = "↩️ 元に戻す";
       restoreBtn.title = "プロジェクトを未完了に戻します";
       restoreBtn.onclick = (e) => {
-          e.stopPropagation();
-          taskOrProject.done = false;
-          rerenderViews();
-          closePopupMenus();
+        e.stopPropagation();
+        taskOrProject.done = false;
+        rerenderViews();
+        closePopupMenus();
       };
       menu.appendChild(restoreBtn);
-  }
+    }
 
-  const editBtn = document.createElement("button"); editBtn.textContent = "✏️"; editBtn.title = "編集";
-  editBtn.onclick = (e) => {
-    e.stopPropagation(); const newName = prompt((type === "project" ? "プロジェクト" : "タスク") + "名を編集:", taskOrProject.name);
-    if (newName) { taskOrProject.name = newName; rerenderViews(); } closePopupMenus();
-  };
-  menu.appendChild(editBtn);
+    const editBtn = document.createElement("button"); editBtn.textContent = "✏️"; editBtn.title = "編集";
+    editBtn.onclick = (e) => {
+      e.stopPropagation(); const newName = prompt((type === "project" ? "プロジェクト" : "タスク") + "名を編集:", taskOrProject.name);
+      if (newName) { taskOrProject.name = newName; rerenderViews(); } closePopupMenus();
+    };
+    menu.appendChild(editBtn);
 
-  if (type === "project" && !taskOrProject.done) {
-    const colorBtn = document.createElement("button");
-    colorBtn.textContent = "🎨";
-    colorBtn.title = "色を変更";
-    colorBtn.onclick = (e) => {
+    if (type === "project" && !taskOrProject.done) {
+      const colorBtn = document.createElement("button");
+      colorBtn.textContent = "🎨";
+      colorBtn.title = "色を変更";
+      colorBtn.onclick = (e) => {
         e.stopPropagation();
         const existingPicker = menu.querySelector('.color-picker-container');
         if (existingPicker) {
-            menu.removeChild(existingPicker);
-            return;
+          menu.removeChild(existingPicker);
+          return;
         }
         const pickerContainer = document.createElement('div');
         pickerContainer.className = 'color-picker-container';
         colors.forEach(color => {
-            const colorOption = document.createElement('div');
-            colorOption.className = 'color-picker-option';
-            colorOption.style.backgroundColor = color;
-            if (color === taskOrProject.color) {
-                colorOption.classList.add('selected');
-            }
-            colorOption.onclick = () => {
-                taskOrProject.color = color;
-                rerenderViews();
-                closePopupMenus();
-            };
-            pickerContainer.appendChild(colorOption);
+          const colorOption = document.createElement('div');
+          colorOption.className = 'color-picker-option';
+          colorOption.style.backgroundColor = color;
+          if (color === taskOrProject.color) {
+            colorOption.classList.add('selected');
+          }
+          colorOption.onclick = () => {
+            taskOrProject.color = color;
+            rerenderViews();
+            closePopupMenus();
+          };
+          pickerContainer.appendChild(colorOption);
         });
         menu.appendChild(pickerContainer);
-    };
-    menu.appendChild(colorBtn);
-  }
+      };
+      menu.appendChild(colorBtn);
+    }
 
-  if (type === 'task') {
-    const periodBtn = document.createElement("button"); periodBtn.textContent = "📅"; periodBtn.title = "期間編集";
-    periodBtn.onclick = (e) => { e.stopPropagation(); showPeriodEditDialog(taskOrProject); closePopupMenus(); };
-    menu.appendChild(periodBtn);
-    const commentBtn = document.createElement("button"); commentBtn.textContent = "💬"; commentBtn.title = "コメント";
-    commentBtn.onclick = (e) => {
-      e.stopPropagation(); const newComment = prompt("コメント:", taskOrProject.comment || "");
-      if (newComment !== null) { taskOrProject.comment = newComment; rerenderViews(); } closePopupMenus();
-    };
-    menu.appendChild(commentBtn);
-  }
+    if (type === 'task') {
+      const periodBtn = document.createElement("button"); periodBtn.textContent = "📅"; periodBtn.title = "期間編集";
+      periodBtn.onclick = (e) => { e.stopPropagation(); showPeriodEditDialog(taskOrProject); closePopupMenus(); };
+      menu.appendChild(periodBtn);
+      const commentBtn = document.createElement("button"); commentBtn.textContent = "💬"; commentBtn.title = "コメント";
+      commentBtn.onclick = (e) => {
+        e.stopPropagation(); const newComment = prompt("コメント:", taskOrProject.comment || "");
+        if (newComment !== null) { taskOrProject.comment = newComment; rerenderViews(); } closePopupMenus();
+      };
+      menu.appendChild(commentBtn);
+    }
 
-  const deleteBtn = document.createElement("button"); deleteBtn.textContent = "🗑️"; deleteBtn.title = "削除";
-  deleteBtn.onclick = (e) => {
-    e.stopPropagation(); if (confirm("本当に削除しますか？")) {
-      const originalDataIndex = data.findIndex(item => item.id === taskOrProject.id);
-      if (type === "project" && originalDataIndex > -1) {
+    const deleteBtn = document.createElement("button"); deleteBtn.textContent = "🗑️"; deleteBtn.title = "削除";
+    deleteBtn.onclick = (e) => {
+      e.stopPropagation(); if (confirm("本当に削除しますか？")) {
+        const originalDataIndex = data.findIndex(item => item.id === taskOrProject.id);
+        if (type === "project" && originalDataIndex > -1) {
           data.splice(originalDataIndex, 1);
-      } else if (type === "task") {
+        } else if (type === "task") {
           findAndRemoveTaskById(data, taskOrProject.id);
-      }
-      rerenderViews();
-    } closePopupMenus();
-  };
-  menu.appendChild(deleteBtn); return menu;
-}
-function closePopupMenus() { document.querySelectorAll(".popup-menu").forEach(menu => menu.style.display = "none"); }
-function togglePopupMenu(titleElem, menu) {
-  if (menu.style.display === "block") menu.style.display = "none";
-  else {
-    closePopupMenus();
-    const rect = titleElem.getBoundingClientRect();
-    menu.style.position = 'fixed'; menu.style.top = (rect.bottom + 4) + "px"; menu.style.left = (rect.left) + "px";
-    menu.style.display = "block";
+        }
+        rerenderViews();
+      } closePopupMenus();
+    };
+    menu.appendChild(deleteBtn); return menu;
   }
-}
+  function closePopupMenus() { document.querySelectorAll(".popup-menu").forEach(menu => menu.style.display = "none"); }
+  function togglePopupMenu(titleElem, menu) {
+    if (menu.style.display === "block") menu.style.display = "none";
+    else {
+      closePopupMenus();
+      const rect = titleElem.getBoundingClientRect();
+      menu.style.position = 'fixed'; menu.style.top = (rect.bottom + 4) + "px"; menu.style.left = (rect.left) + "px";
+      menu.style.display = "block";
+    }
+  }
 
-// --- 期間編集ダイアログ ---
-function showPeriodEditDialog(task) {
-  const modalBg = document.createElement("div");
-  modalBg.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center; z-index:10002;";
-  const modal = document.createElement("div");
-  modal.style.cssText = "background:white; padding:16px; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.2); min-width:280px;";
-  modal.innerHTML = `<h3>期間を選択</h3><label style="display:block; margin-top:8px;">開始日:</label><input type="date" id="startDateInput" value="${task.startDate || ''}"><label style="display:block; margin-top:8px;">終了日:</label><input type="date" id="endDateInput" value="${task.endDate || ''}"><div style="margin-top:12px; text-align:right;"><button id="cancelBtn" style="margin-right:8px; background-color: #777;">キャンセル</button><button id="okBtn">OK</button></div>`;
-  modalBg.appendChild(modal); document.body.appendChild(modalBg);
-  const close = () => document.body.contains(modalBg) && document.body.removeChild(modalBg);
-  modalBg.onclick = (e) => { if (e.target === modalBg) close(); };
-  modal.querySelector('#cancelBtn').onclick = close;
-  modal.querySelector('#okBtn').onclick = () => {
-    const start = modal.querySelector('#startDateInput').value, end = modal.querySelector('#endDateInput').value;
-    if (start && end && start > end) { alert("開始日は終了日以前を選択してください。"); return; }
-    task.startDate = start; task.endDate = end;
-    rerenderViews(); close();
-  };
-}
+  // --- 期間編集ダイアログ ---
+  function showPeriodEditDialog(task) {
+    const modalBg = document.createElement("div");
+    modalBg.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center; z-index:10002;";
+    const modal = document.createElement("div");
+    modal.style.cssText = "background:white; padding:16px; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.2); min-width:280px;";
+    modal.innerHTML = `<h3>期間を選択</h3><label style="display:block; margin-top:8px;">開始日:</label><input type="date" id="startDateInput" value="${task.startDate || ''}"><label style="display:block; margin-top:8px;">終了日:</label><input type="date" id="endDateInput" value="${task.endDate || ''}"><div style="margin-top:12px; text-align:right;"><button id="cancelBtn" style="margin-right:8px; background-color: #777;">キャンセル</button><button id="okBtn">OK</button></div>`;
+    modalBg.appendChild(modal); document.body.appendChild(modalBg);
+    const close = () => document.body.contains(modalBg) && document.body.removeChild(modalBg);
+    modalBg.onclick = (e) => { if (e.target === modalBg) close(); };
+    modal.querySelector('#cancelBtn').onclick = close;
+    modal.querySelector('#okBtn').onclick = () => {
+      const start = modal.querySelector('#startDateInput').value, end = modal.querySelector('#endDateInput').value;
+      if (start && end && start > end) { alert("開始日は終了日以前を選択してください。"); return; }
+      task.startDate = start; task.endDate = end;
+      rerenderViews(); close();
+    };
+  }
 
-// --- プロジェクトフィルター ---
-function renderProjectFilterPills() {
+  // --- プロジェクトフィルター ---
+  function renderProjectFilterPills() {
     projectFilterPillsContainer.innerHTML = '';
     const activeProjects = data.filter(p => !p.done);
     const completedProjects = data.filter(p => p.done);
@@ -538,493 +533,462 @@ function renderProjectFilterPills() {
     allBtn.className = 'project-pill all-projects-pill';
     allBtn.style.backgroundColor = '#6c757d';
     if (activeProjectFilter === 'all') {
-        allBtn.classList.add('active');
+      allBtn.classList.add('active');
     }
     allBtn.onclick = () => {
-        activeProjectFilter = 'all';
-        updateView();
+      activeProjectFilter = 'all';
+      updateView();
     };
     projectFilterPillsContainer.appendChild(allBtn);
 
     projectsForPills.forEach(project => {
-        const pill = document.createElement('div');
-        pill.textContent = project.name.substring(0, 3);
-        pill.title = project.name;
-        pill.className = 'project-pill';
-        pill.dataset.projectId = project.id;
-        pill.style.backgroundColor = project.color;
-        if (activeProjectFilter === project.id) {
-            pill.classList.add('active');
-        }
-        pill.onclick = () => {
-            activeProjectFilter = project.id;
-            updateView();
-        };
-        projectFilterPillsContainer.appendChild(pill);
+      const pill = document.createElement('div');
+      pill.textContent = project.name.substring(0, 3);
+      pill.title = project.name;
+      pill.className = 'project-pill';
+      pill.dataset.projectId = project.id;
+      pill.style.backgroundColor = project.color;
+      if (activeProjectFilter === project.id) {
+        pill.classList.add('active');
+      }
+      pill.onclick = () => {
+        activeProjectFilter = project.id;
+        updateView();
+      };
+      projectFilterPillsContainer.appendChild(pill);
     });
 
     if (completedProjects.length > 0) {
-        const toggleBtn = document.createElement('div');
-        toggleBtn.textContent = showCompletedProjects ? '進行中を表示' : '完了済を表示';
-        toggleBtn.title = showCompletedProjects ? '進行中のプロジェクトを表示' : '完了済みのプロジェクトを表示';
-        toggleBtn.className = 'project-pill completed-projects-btn';
-        toggleBtn.style.backgroundColor = '#6c757d';
-        toggleBtn.onclick = () => {
-            showCompletedProjects = !showCompletedProjects;
-            activeProjectFilter = 'all';
-            updateView();
-        };
-        projectFilterPillsContainer.appendChild(toggleBtn);
+      const toggleBtn = document.createElement('div');
+      toggleBtn.textContent = showCompletedProjects ? '進行中を表示' : '完了済を表示';
+      toggleBtn.title = showCompletedProjects ? '進行中のプロジェクトを表示' : '完了済みのプロジェクトを表示';
+      toggleBtn.className = 'project-pill completed-projects-btn';
+      toggleBtn.style.backgroundColor = '#6c757d';
+      toggleBtn.onclick = () => {
+        showCompletedProjects = !showCompletedProjects;
+        activeProjectFilter = 'all';
+        updateView();
+      };
+      projectFilterPillsContainer.appendChild(toggleBtn);
     }
-}
+  }
 
-// --- カレンダー関連機能 ---
-// ★★★ 変更箇所 ★★★
-function renderCalendar() {
+  // --- カレンダー関連機能 ---
+  function renderCalendar() {
     if (calendarInstance) {
-        calendarInstance.destroy();
+      calendarInstance.destroy();
     }
 
     calendarInstance = new FullCalendar.Calendar(calendarView, {
-        locale: 'ja',
-        initialView: 'dayGridMonth',
-        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
-        editable: true,
-        
-        // eventsプロパティに関数を指定し、カレンダー更新時に常に最新のデータを読み込むように修正
-        events: function(fetchInfo, successCallback, failureCallback) {
-            const eventArray = [];
-            const projectsToScan = data; // 全てのプロジェクトを対象
+      locale: 'ja',
+      initialView: 'dayGridMonth',
+      headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
+      editable: true,
+      
+      events: function(fetchInfo, successCallback, failureCallback) {
+        const eventArray = [];
+        const projectsToScan = data;
 
-            function collectLeafTasksRecursive(nodes, project) {
-                nodes.forEach(node => {
-                    const isLeaf = !node.children || node.children.length === 0;
-                    if (isLeaf) {
-                        if (activeProjectFilter === 'all' || project.id === activeProjectFilter) {
-                            if (node.done && node.completedDate) {
-                                eventArray.push({
-                                    title: node.name,
-                                    start: node.completedDate,
-                                    allDay: true,
-                                    extendedProps: { taskId: node.id },
-                                    classNames: ['completed-calendar-event']
-                                });
-                            } 
-                            else if (!node.done && node.startDate) {
-                                eventArray.push({
-                                    title: node.name,
-                                    start: node.startDate,
-                                    end: node.endDate ? new Date(new Date(node.endDate).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] : null,
-                                    allDay: true,
-                                    color: project.color,
-                                    extendedProps: { taskId: node.id }
-                                });
-                            }
-                        }
-                    }
-                    if (node.children) {
-                        collectLeafTasksRecursive(node.children, project);
-                    }
-                });
+        function collectLeafTasksRecursive(nodes, project) {
+          nodes.forEach(node => {
+            const isLeaf = !node.children || node.children.length === 0;
+            if (isLeaf) {
+              if (activeProjectFilter === 'all' || project.id === activeProjectFilter) {
+                if (node.done && node.completedDate) {
+                  eventArray.push({
+                    title: node.name,
+                    start: node.completedDate,
+                    allDay: true,
+                    extendedProps: { taskId: node.id },
+                    classNames: ['completed-calendar-event']
+                  });
+                } 
+                else if (!node.done && node.startDate) {
+                  eventArray.push({
+                    title: node.name,
+                    start: node.startDate,
+                    end: node.endDate ? new Date(new Date(node.endDate).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] : null,
+                    allDay: true,
+                    color: project.color,
+                    extendedProps: { taskId: node.id }
+                  });
+                }
+              }
             }
-
-            projectsToScan.forEach(project => {
-                collectLeafTasksRecursive(project.children, project);
-            });
-            
-            successCallback(eventArray);
-        },
-
-        eventDrop: (info) => {
-            const task = findTaskById(data, info.event.extendedProps.taskId);
-            if (!task) return;
-            const newStartDate = info.event.startStr;
-            if (task.done) {
-                task.completedDate = newStartDate;
+            if (node.children) {
+              collectLeafTasksRecursive(node.children, project);
             }
-            task.startDate = newStartDate;
-            if (info.event.end) {
-                const endDate = new Date(info.event.end);
-                endDate.setDate(endDate.getDate() - 1);
-                task.endDate = endDate.toISOString().split('T')[0];
-            } else {
-                task.endDate = newStartDate;
-            }
-            saveData();
-            calendarInstance.refetchEvents();
-        },
-
-        eventClick: (info) => {
-            info.jsEvent.preventDefault();
-            const task = findTaskById(data, info.event.extendedProps.taskId);
-            if (task) showCalendarTaskPopup(task);
+          });
         }
+
+        projectsToScan.forEach(project => {
+          collectLeafTasksRecursive(project.children, project);
+        });
+        
+        successCallback(eventArray);
+      },
+
+      eventDrop: (info) => {
+        const task = findTaskById(data, info.event.extendedProps.taskId);
+        if (!task) return;
+        const newStartDate = info.event.startStr;
+        if (task.done) {
+          task.completedDate = newStartDate;
+        }
+        task.startDate = newStartDate;
+        if (info.event.end) {
+          const endDate = new Date(info.event.end);
+          endDate.setDate(endDate.getDate() - 1);
+          task.endDate = endDate.toISOString().split('T')[0];
+        } else {
+          task.endDate = newStartDate;
+        }
+        saveData();
+        calendarInstance.refetchEvents();
+      },
+
+      eventClick: (info) => {
+        info.jsEvent.preventDefault();
+        const task = findTaskById(data, info.event.extendedProps.taskId);
+        if (task) showCalendarTaskPopup(task);
+      }
     });
 
     calendarInstance.render();
-}
+  }
 
-function showCalendarTaskPopup(task) {
+  function showCalendarTaskPopup(task) {
     const bg = document.createElement('div'); bg.id = 'calendar-task-popup-bg';
     const content = document.createElement('div'); content.id = 'calendar-task-popup-content';
     const timelineItem = createTimelineItem(task, { isDraggable: false });
     content.appendChild(timelineItem);
     bg.appendChild(content); document.body.appendChild(bg);
-}
+  }
 
-// --- タイムライン描画 ---
-function renderTimeline() {
-  datedTasksList.innerHTML = ""; undatedTasksList.innerHTML = "";
-  const allDatedTasks = [], allUndatedTasks = [];
-  const activeProjects = data.filter(p => !p.done);
-  function collectTasks(nodes, project) {
-    nodes.forEach(node => {
-      const isLeafTask = !node.children || node.children.length === 0;
-      if (isLeafTask && !node.done) {
-        if (activeProjectFilter === 'all' || project.id === activeProjectFilter) {
+  // --- タイムライン描画 ---
+  function renderTimeline() {
+    datedTasksList.innerHTML = ""; undatedTasksList.innerHTML = "";
+    const allDatedTasks = [], allUndatedTasks = [];
+    const activeProjects = data.filter(p => !p.done);
+    function collectTasks(nodes, project) {
+      nodes.forEach(node => {
+        const isLeafTask = !node.children || node.children.length === 0;
+        if (isLeafTask && !node.done) {
+          if (activeProjectFilter === 'all' || project.id === activeProjectFilter) {
             const taskInfo = { ...node, projectColor: project?.color || '#ccc' };
             if (taskInfo.startDate) allDatedTasks.push(taskInfo); else allUndatedTasks.push(taskInfo);
+          }
         }
-      }
-      if (node.children?.length) collectTasks(node.children, project);
-    });
-  }
-  activeProjects.forEach(p => collectTasks(p.children, p));
+        if (node.children?.length) collectTasks(node.children, project);
+      });
+    }
+    activeProjects.forEach(p => collectTasks(p.children, p));
 
-  const datedSeparator = { id: SEPARATOR_DATED_ID, type: 'separator' };
-  let listForDatedRendering;
-  if (datedTimelineOrder.length === 0) { allDatedTasks.sort((a, b) => new Date(a.startDate) - new Date(b.startDate)); listForDatedRendering = [...allDatedTasks, datedSeparator]; }
-  else {
+    const datedSeparator = { id: SEPARATOR_DATED_ID, type: 'separator' };
+    let listForDatedRendering;
+    if (datedTimelineOrder.length === 0) { allDatedTasks.sort((a, b) => new Date(a.startDate) - new Date(b.startDate)); listForDatedRendering = [...allDatedTasks, datedSeparator]; }
+    else {
       const existingItems = datedTimelineOrder.map(id => id === SEPARATOR_DATED_ID ? datedSeparator : allDatedTasks.find(t => t.id === id)).filter(Boolean);
       const newTasks = allDatedTasks.filter(t => !datedTimelineOrder.includes(t.id)); listForDatedRendering = [...existingItems];
       newTasks.forEach(newTask => {
-          let inserted = false;
-          for (let i = 0; i < listForDatedRendering.length; i++) {
-              const currentItem = listForDatedRendering[i];
-              if (currentItem.type === 'separator' || !currentItem.startDate) continue;
-              if (new Date(newTask.startDate) < new Date(currentItem.startDate)) { inserted = true; listForDatedRendering.splice(i, 0, newTask); break; }
-          }
-          if (!inserted) { const sepIdx = listForDatedRendering.findIndex(t => t.type === 'separator'); listForDatedRendering.splice(sepIdx !== -1 ? sepIdx : listForDatedRendering.length, 0, newTask); }
+        let inserted = false;
+        for (let i = 0; i < listForDatedRendering.length; i++) {
+          const currentItem = listForDatedRendering[i];
+          if (currentItem.type === 'separator' || !currentItem.startDate) continue;
+          if (new Date(newTask.startDate) < new Date(currentItem.startDate)) { inserted = true; listForDatedRendering.splice(i, 0, newTask); break; }
+        }
+        if (!inserted) { const sepIdx = listForDatedRendering.findIndex(t => t.type === 'separator'); listForDatedRendering.splice(sepIdx !== -1 ? sepIdx : listForDatedRendering.length, 0, newTask); }
       });
-  }
-  listForDatedRendering.forEach(task => datedTasksList.appendChild(createTimelineItem(task)));
+    }
+    listForDatedRendering.forEach(task => datedTasksList.appendChild(createTimelineItem(task)));
 
-  allUndatedTasks.push({ id: SEPARATOR_UNDATED_ID, type: 'separator' });
-  let listForUndatedRendering;
-  if (undatedTimelineOrder.length === 0) listForUndatedRendering = allUndatedTasks;
-  else {
+    allUndatedTasks.push({ id: SEPARATOR_UNDATED_ID, type: 'separator' });
+    let listForUndatedRendering;
+    if (undatedTimelineOrder.length === 0) listForUndatedRendering = allUndatedTasks;
+    else {
       const allUndatedMap = new Map(allUndatedTasks.map(t => [t.id, t]));
       const finalOrdered = undatedTimelineOrder.map(id => allUndatedMap.get(id)).filter(Boolean);
       const newTasks = allUndatedTasks.filter(t => !finalOrdered.some(ot => ot.id === t.id));
       newTasks.forEach(newTask => {
-          const originalIndex = allUndatedTasks.findIndex(t => t.id === newTask.id); let insertionIndex = -1;
-          for (let i = originalIndex - 1; i >= 0; i--) { const precedingTask = allUndatedTasks[i]; const indexInFinal = finalOrdered.findIndex(t => t.id === precedingTask.id); if (indexInFinal !== -1) { insertionIndex = indexInFinal + 1; break; } }
-          if (insertionIndex !== -1) finalOrdered.splice(insertionIndex, 0, newTask);
-          else { const sepIdx = finalOrdered.findIndex(t => t.type === 'separator'); finalOrdered.splice(sepIdx !== -1 ? sepIdx : finalOrdered.length, 0, newTask); }
+        const originalIndex = allUndatedTasks.findIndex(t => t.id === newTask.id); let insertionIndex = -1;
+        for (let i = originalIndex - 1; i >= 0; i--) { const precedingTask = allUndatedTasks[i]; const indexInFinal = finalOrdered.findIndex(t => t.id === precedingTask.id); if (indexInFinal !== -1) { insertionIndex = indexInFinal + 1; break; } }
+        if (insertionIndex !== -1) finalOrdered.splice(insertionIndex, 0, newTask);
+        else { const sepIdx = finalOrdered.findIndex(t => t.type === 'separator'); finalOrdered.splice(sepIdx !== -1 ? sepIdx : finalOrdered.length, 0, newTask); }
       });
       listForUndatedRendering = finalOrdered;
+    }
+    listForUndatedRendering.forEach(task => undatedTasksList.appendChild(createTimelineItem(task)));
+    initSortableForTimelineColumns();
   }
-  listForUndatedRendering.forEach(task => undatedTasksList.appendChild(createTimelineItem(task)));
-  initSortableForTimelineColumns();
-}
 
-function createTimelineItem(task, options = { isDraggable: true }) {
-  if (task.type === 'separator') {
-    const item = document.createElement('div'); item.className = 'timeline-separator-item'; item.dataset.taskId = task.id;
-    const handle = createIconButton("↕️"); handle.classList.add("drag-handle");
-    const line = document.createElement('div'); line.className = 'separator-line';
-    item.append(handle, line); return item;
-  }
-  const item = document.createElement('div'); item.className = 'timeline-item'; item.dataset.taskId = task.id;
-  if (task.done) item.classList.add('is-done');
-  const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.checked = task.done;
-  checkbox.dataset.taskId = task.id; checkbox.onclick = (e) => e.stopPropagation();
-  checkbox.onchange = (e) => {
-    const targetTask = findTaskById(data, e.target.dataset.taskId);
-    if (targetTask) {
+  function createTimelineItem(task, options = { isDraggable: true }) {
+    if (task.type === 'separator') {
+      const item = document.createElement('div'); item.className = 'timeline-separator-item'; item.dataset.taskId = task.id;
+      const handle = createIconButton("↕️"); handle.classList.add("drag-handle");
+      const line = document.createElement('div'); line.className = 'separator-line';
+      item.append(handle, line); return item;
+    }
+    const item = document.createElement('div'); item.className = 'timeline-item'; item.dataset.taskId = task.id;
+    if (task.done) item.classList.add('is-done');
+    const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.checked = task.done;
+    checkbox.dataset.taskId = task.id; checkbox.onclick = (e) => e.stopPropagation();
+    checkbox.onchange = (e) => {
+      const targetTask = findTaskById(data, e.target.dataset.taskId);
+      if (targetTask) {
         targetTask.done = e.target.checked;
         if (targetTask.done) {
-            targetTask.completedDate = new Date().toISOString().split('T')[0];
+          targetTask.completedDate = new Date().toISOString().split('T')[0];
         } else {
-            targetTask.completedDate = null;
+          targetTask.completedDate = null;
         }
         updateAllAncestorStatus(targetTask.id);
         saveData();
         item.classList.toggle('is-done', e.target.checked);
         
         if (currentView === 'calendar') {
-            calendarInstance.refetchEvents();
-            const popup = document.getElementById('calendar-task-popup-bg');
-            if (popup) {
-                document.body.removeChild(popup);
-            }
+          calendarInstance.refetchEvents();
+          const popup = document.getElementById('calendar-task-popup-bg');
+          if (popup) {
+            document.body.removeChild(popup);
+          }
         }
+      }
+    };
+    const content = document.createElement('div'); content.className = 'timeline-item-content';
+    const project = findProjectForNode(data, task.id); content.style.borderLeftColor = project?.color || '#ccc';
+    const header = document.createElement('div'); header.className = 'timeline-item-header';
+    const path = findTaskPath(data, task.id); const pathString = path ? path.slice(0, -1).join(' > ') : '';
+    const taskNameSpan = document.createElement('span'); taskNameSpan.textContent = task.name;
+    header.appendChild(taskNameSpan);
+    if (pathString) {
+      const pathSpan = document.createElement('span'); pathSpan.style.cssText = "font-weight: normal; font-size: 0.8em; color: #666; margin-left: 8px;";
+      pathSpan.textContent = `(${pathString})`; header.appendChild(pathSpan);
     }
-  };
-  const content = document.createElement('div'); content.className = 'timeline-item-content';
-  const project = findProjectForNode(data, task.id); content.style.borderLeftColor = project?.color || '#ccc';
-  const header = document.createElement('div'); header.className = 'timeline-item-header';
-  const path = findTaskPath(data, task.id); const pathString = path ? path.slice(0, -1).join(' > ') : '';
-  const taskNameSpan = document.createElement('span'); taskNameSpan.textContent = task.name;
-  header.appendChild(taskNameSpan);
-  if (pathString) {
-    const pathSpan = document.createElement('span'); pathSpan.style.cssText = "font-weight: normal; font-size: 0.8em; color: #666; margin-left: 8px;";
-    pathSpan.textContent = `(${pathString})`; header.appendChild(pathSpan);
-  }
-  header.addEventListener('click', (e) => {
-    e.stopPropagation(); const currentTask = findTaskById(data, task.id);
-    if (currentTask) {
+    header.addEventListener('click', (e) => {
+      e.stopPropagation(); const currentTask = findTaskById(data, task.id);
+      if (currentTask) {
         const parentProject = findProjectForNode(data, currentTask.id);
         const menu = createPopupMenu(currentTask, findParent(data, currentTask.id), parentProject?.children.findIndex(c => c.id === currentTask.id), "task");
         document.body.appendChild(menu);
         togglePopupMenu(header, menu);
+      }
+    });
+    const meta = document.createElement('div'); meta.className = 'timeline-item-meta';
+    let periodText = '';
+    if (task.startDate) { const formatDate = d => d ? new Date(d).toLocaleDateString() : '?'; periodText = `${formatDate(task.startDate)} ~ ${formatDate(task.endDate)}`; }
+    let commentHTML = '';
+    if (task.comment) { const escaped = task.comment.replace(/</g, "&lt;").replace(/>/g, "&gt;"); commentHTML = `<div class="timeline-comment-display">${escaped}</div>`; }
+    meta.innerHTML = periodText + commentHTML;
+    content.append(header, meta);
+    if (options.isDraggable) {
+      const dragHandle = createIconButton("↕️"); dragHandle.classList.add("drag-handle");
+      dragHandle.onclick = (e) => e.stopPropagation();
+      item.append(dragHandle, checkbox, content);
+    } else {
+      item.append(checkbox, content);
     }
-  });
-  const meta = document.createElement('div'); meta.className = 'timeline-item-meta';
-  let periodText = '';
-  if (task.startDate) { const formatDate = d => d ? new Date(d).toLocaleDateString() : '?'; periodText = `${formatDate(task.startDate)} ~ ${formatDate(task.endDate)}`; }
-  let commentHTML = '';
-  if (task.comment) { const escaped = task.comment.replace(/</g, "&lt;").replace(/>/g, "&gt;"); commentHTML = `<div class="timeline-comment-display">${escaped}</div>`; }
-  meta.innerHTML = periodText + commentHTML;
-  content.append(header, meta);
-  if (options.isDraggable) {
-    const dragHandle = createIconButton("↕️"); dragHandle.classList.add("drag-handle");
-    dragHandle.onclick = (e) => e.stopPropagation();
-    item.append(dragHandle, checkbox, content);
-  } else {
-    item.append(checkbox, content);
+    return item;
   }
-  return item;
-}
 
-function findTaskPath(nodes, taskId, currentPath = []) {
+  function findTaskPath(nodes, taskId, currentPath = []) {
     for (const node of nodes) { const newPath = [...currentPath, node.name]; if (node.id === taskId) return newPath; if (node.children) { const foundPath = findTaskPath(node.children, taskId, newPath); if (foundPath) return foundPath; } }
     return null;
-}
+  }
 
-// --- 階層リスト描画 ---
-function render() {
-  projectList.innerHTML = "";
-  const projectsToDisplay = showCompletedProjects
-    ? data.filter(p => p.done)
-    : data.filter(p => !p.done);
+  // --- 階層リスト描画 ---
+  function render() {
+    projectList.innerHTML = "";
+    const projectsToDisplay = showCompletedProjects
+      ? data.filter(p => p.done)
+      : data.filter(p => !p.done);
 
-  const filteredProjects = projectsToDisplay.filter(project =>
-    activeProjectFilter === "all" || activeProjectFilter === project.id
-  );
+    const filteredProjects = projectsToDisplay.filter(project =>
+      activeProjectFilter === "all" || activeProjectFilter === project.id
+    );
 
-  filteredProjects.forEach((project) => {
-    const originalIndex = data.findIndex(p => p.id === project.id);
-    projectList.appendChild(createProjectElement(project, originalIndex));
-  });
+    filteredProjects.forEach((project) => {
+      const originalIndex = data.findIndex(p => p.id === project.id);
+      projectList.appendChild(createProjectElement(project, originalIndex));
+    });
 
-  initSortable();
-}
+    initSortable();
+  }
 
-function createProjectElement(project, index) {
-  const div = document.createElement("div");
-  div.className = "project";
-  div.dataset.id = project.id;
-  if (project.done) div.classList.add("completed-task");
+  function createProjectElement(project, index) {
+    const div = document.createElement("div");
+    div.className = "project";
+    div.dataset.id = project.id;
+    if (project.done) div.classList.add("completed-task");
 
-  const bar = document.createElement("div"); bar.className = "bar";
-  bar.style.backgroundColor = project.color || colors[0];
+    const bar = document.createElement("div"); bar.className = "bar";
+    bar.style.backgroundColor = project.color || colors[0];
 
-  const content = document.createElement("div"); content.className = "task-content";
-  
-  if (!project.done) {
+    const content = document.createElement("div"); content.className = "task-content";
+    
+    if (!project.done) {
       const dragHandle = createIconButton("↕️"); dragHandle.classList.add("drag-handle");
       content.appendChild(dragHandle);
-  }
-  
-  const title = document.createElement("span"); title.textContent = project.name;
-  const popupMenu = createPopupMenu(project, null, index, "project"); document.body.appendChild(popupMenu);
-  title.addEventListener("click", (e) => { e.stopPropagation(); togglePopupMenu(title, popupMenu); });
-  content.appendChild(title);
+    }
+    
+    const title = document.createElement("span"); title.textContent = project.name;
+    const popupMenu = createPopupMenu(project, null, index, "project"); document.body.appendChild(popupMenu);
+    title.addEventListener("click", (e) => { e.stopPropagation(); togglePopupMenu(title, popupMenu); });
+    content.appendChild(title);
 
-  const addSubBtn = createIconButton("➕", () => {
+    const addSubBtn = createIconButton("➕", () => {
       const name = prompt("タスク名:");
       if (name) {
-          addTaskAndUpdateDOM(project, name);
+        addTaskAndUpdateDOM(project, name);
       }
-  });
-  content.appendChild(addSubBtn);
-  
-  div.append(bar, content);
-  
-  if (project.children) {
-    const ul = document.createElement("div"); ul.className = "task-list";
-    const colorForTasks = project.color;
-    project.children.forEach((child, childIndex) => ul.appendChild(createTaskElement(child, project, childIndex, colorForTasks)));
-    div.appendChild(ul);
+    });
+    content.appendChild(addSubBtn);
+    
+    div.append(bar, content);
+    
+    if (project.children) {
+      const ul = document.createElement("div"); ul.className = "task-list";
+      const colorForTasks = project.color;
+      project.children.forEach((child, childIndex) => ul.appendChild(createTaskElement(child, project, childIndex, colorForTasks)));
+      div.appendChild(ul);
+    }
+    return div;
   }
-  return div;
-}
 
-function createTaskElement(task, parent, index, color) {
-  const div = document.createElement("div"); div.className = "task"; div.dataset.id = task.id;
-  if (task.done) div.classList.add("completed-task");
-  const isLeaf = !task.children || task.children.length === 0;
-  if (isLeaf && !task.done) div.classList.add("leaf-task");
-  const bar = document.createElement("div"); bar.className = "bar"; bar.style.backgroundColor = color;
-  const content = document.createElement("div"); content.className = "task-content";
-  
-  const isParentProjectDone = findProjectForNode(data, task.id)?.done || false;
-  if (!isParentProjectDone) {
+  function createTaskElement(task, parent, index, color) {
+    const div = document.createElement("div"); div.className = "task"; div.dataset.id = task.id;
+    if (task.done) div.classList.add("completed-task");
+    const isLeaf = !task.children || task.children.length === 0;
+    if (isLeaf && !task.done) div.classList.add("leaf-task");
+    const bar = document.createElement("div"); bar.className = "bar"; bar.style.backgroundColor = color;
+    const content = document.createElement("div"); content.className = "task-content";
+    
+    const isParentProjectDone = findProjectForNode(data, task.id)?.done || false;
+    if (!isParentProjectDone) {
       const dragHandle = createIconButton("↕️"); dragHandle.classList.add("drag-handle");
       content.appendChild(dragHandle);
-  }
+    }
 
-  const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = task.done;
-  checkbox.onchange = () => {
-    task.done = checkbox.checked;
-    if (task.done) {
+    const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = task.done;
+    checkbox.onchange = () => {
+      task.done = checkbox.checked;
+      if (task.done) {
         task.completedDate = new Date().toISOString().split('T')[0];
-    } else {
+      } else {
         task.completedDate = null;
-    }
-    updateAllAncestorStatus(task.id);
-    saveData();
-    updateVisualStatusInDOM(task.id);
-    if (currentView === 'calendar') {
+      }
+      updateAllAncestorStatus(task.id);
+      saveData();
+      updateVisualStatusInDOM(task.id);
+      if (currentView === 'calendar') {
         calendarInstance.refetchEvents();
-    }
-  };
-  content.appendChild(checkbox);
+      }
+    };
+    content.appendChild(checkbox);
 
-  const title = document.createElement("span"); title.textContent = task.name;
-  const popupMenu = createPopupMenu(task, parent, index, "task"); document.body.appendChild(popupMenu);
-  title.addEventListener("click", (e) => { e.stopPropagation(); togglePopupMenu(title, popupMenu); });
-  content.appendChild(title);
+    const title = document.createElement("span"); title.textContent = task.name;
+    const popupMenu = createPopupMenu(task, parent, index, "task"); document.body.appendChild(popupMenu);
+    title.addEventListener("click", (e) => { e.stopPropagation(); togglePopupMenu(title, popupMenu); });
+    content.appendChild(title);
 
-  const periodSpan = document.createElement("span"); periodSpan.style.cssText = "font-size:12px; color:#666; margin-left:6px;";
-  if (task.startDate) { const formatDate = d => new Date(d).toLocaleDateString('ja-JP', {month:'numeric', day:'numeric'}); periodSpan.textContent = `(${formatDate(task.startDate)}~${task.endDate ? formatDate(task.endDate) : ''})`; }
-  content.appendChild(periodSpan);
+    const periodSpan = document.createElement("span"); periodSpan.style.cssText = "font-size:12px; color:#666; margin-left:6px;";
+    if (task.startDate) { const formatDate = d => new Date(d).toLocaleDateString('ja-JP', {month:'numeric', day:'numeric'}); periodSpan.textContent = `(${formatDate(task.startDate)}~${task.endDate ? formatDate(task.endDate) : ''})`; }
+    content.appendChild(periodSpan);
 
-  const addSubBtn = createIconButton("➕", () => {
+    const addSubBtn = createIconButton("➕", () => {
       const name = prompt("サブタスク名:");
       if (name) {
-          addTaskAndUpdateDOM(task, name);
+        addTaskAndUpdateDOM(task, name);
       }
-  });
-  content.appendChild(addSubBtn);
+    });
+    content.appendChild(addSubBtn);
 
-  div.append(bar, content);
-  if (task.comment) { const commentDiv = document.createElement("div"); commentDiv.className = "task-comment"; commentDiv.textContent = task.comment; div.appendChild(commentDiv); }
-  if (task.children?.length) {
-    const ul = document.createElement("div"); ul.className = "task-list";
-    task.children.forEach((child, childIndex) => ul.appendChild(createTaskElement(child, task, childIndex, color)));
-    div.appendChild(ul);
+    div.append(bar, content);
+    if (task.comment) { const commentDiv = document.createElement("div"); commentDiv.className = "task-comment"; commentDiv.textContent = task.comment; div.appendChild(commentDiv); }
+    if (task.children?.length) {
+      const ul = document.createElement("div"); ul.className = "task-list";
+      task.children.forEach((child, childIndex) => ul.appendChild(createTaskElement(child, task, childIndex, color)));
+      div.appendChild(ul);
+    }
+    return div;
   }
-  return div;
-}
-function createIconButton(icon, action) { const btn = document.createElement("button"); btn.className = "icon-btn"; btn.innerText = icon; if(action) btn.onclick = action; return btn; }
+  function createIconButton(icon, action) { const btn = document.createElement("button"); btn.className = "icon-btn"; btn.innerText = icon; if(action) btn.onclick = action; return btn; }
 
-// --- SortableJS (ドラッグ＆ドロップ) ---
-function initSortableForProjectPills() {
+  // --- SortableJS (ドラッグ＆ドロップ) ---
+  function initSortableForProjectPills() {
     if (projectFilterPillsContainer.sortableInstance) {
-        projectFilterPillsContainer.sortableInstance.destroy();
+      projectFilterPillsContainer.sortableInstance.destroy();
     }
     projectFilterPillsContainer.sortableInstance = Sortable.create(projectFilterPillsContainer, {
-        animation: 150,
-        filter: '.all-projects-pill, .completed-projects-btn',
-        onEnd: function () {
-            const newIdOrder = Array.from(projectFilterPillsContainer.querySelectorAll('.project-pill:not(.all-projects-pill):not(.completed-projects-btn)'))
-                                        .map(pill => pill.dataset.projectId);
-            
-            const projectsToReorder = showCompletedProjects ? data.filter(p => p.done) : data.filter(p => !p.done);
-            const otherProjects = showCompletedProjects ? data.filter(p => !p.done) : data.filter(p => p.done);
+      animation: 150,
+      filter: '.all-projects-pill, .completed-projects-btn',
+      onEnd: function () {
+        const newIdOrder = Array.from(projectFilterPillsContainer.querySelectorAll('.project-pill:not(.all-projects-pill):not(.completed-projects-btn)'))
+                                      .map(pill => pill.dataset.projectId);
+        
+        const projectsToReorder = showCompletedProjects ? data.filter(p => p.done) : data.filter(p => !p.done);
+        const otherProjects = showCompletedProjects ? data.filter(p => !p.done) : data.filter(p => p.done);
 
-            const reorderedProjects = newIdOrder.map(id => projectsToReorder.find(p => p.id === id)).filter(Boolean);
-            
-            data = showCompletedProjects ? [...otherProjects, ...reorderedProjects] : [...reorderedProjects, ...otherProjects];
-            rerenderViews();
-        }
+        const reorderedProjects = newIdOrder.map(id => projectsToReorder.find(p => p.id === id)).filter(Boolean);
+        
+        data = showCompletedProjects ? [...otherProjects, ...reorderedProjects] : [...reorderedProjects, ...otherProjects];
+        rerenderViews();
+      }
     });
-}
-function initSortableForTimelineColumns() {
-  if (datedTasksList.sortableInstance) datedTasksList.sortableInstance.destroy(); if (undatedTasksList.sortableInstance) undatedTasksList.sortableInstance.destroy();
-  datedTasksList.sortableInstance = Sortable.create(datedTasksList, { animation: 150, handle: ".drag-handle", group: "timelineTasks", onEnd: () => { datedTimelineOrder = Array.from(datedTasksList.querySelectorAll('.timeline-item, .timeline-separator-item')).map(item => item.dataset.taskId); localStorage.setItem("datedTimelineOrder", JSON.stringify(datedTimelineOrder)); } });
-  undatedTasksList.sortableInstance = Sortable.create(undatedTasksList, { animation: 150, handle: ".drag-handle", group: "timelineTasks", onEnd: () => { undatedTimelineOrder = Array.from(undatedTasksList.querySelectorAll('.timeline-item, .timeline-separator-item')).map(item => item.dataset.taskId); localStorage.setItem("undatedTimelineOrder", JSON.stringify(undatedTimelineOrder)); } });
-}
+  }
+  function initSortableForTimelineColumns() {
+    if (datedTasksList.sortableInstance) datedTasksList.sortableInstance.destroy(); if (undatedTasksList.sortableInstance) undatedTasksList.sortableInstance.destroy();
+    datedTasksList.sortableInstance = Sortable.create(datedTasksList, { animation: 150, handle: ".drag-handle", group: "timelineTasks", onEnd: () => { datedTimelineOrder = Array.from(datedTasksList.querySelectorAll('.timeline-item, .timeline-separator-item')).map(item => item.dataset.taskId); saveData(); } });
+    undatedTasksList.sortableInstance = Sortable.create(undatedTasksList, { animation: 150, handle: ".drag-handle", group: "timelineTasks", onEnd: () => { undatedTimelineOrder = Array.from(undatedTasksList.querySelectorAll('.timeline-item, .timeline-separator-item')).map(item => item.dataset.taskId); saveData(); } });
+  }
 
-function initSingleSortableList(list) {
+  function initSingleSortableList(list) {
     if(list.sortableInstance) list.sortableInstance.destroy();
     list.sortableInstance = new Sortable(list, {
-        group: 'nested', animation: 150, handle: ".drag-handle",
-        disabled: showCompletedProjects,
-        onEnd: (evt) => {
-            const fromParentEl = evt.from.closest('.project, .task');
-            const toParentEl = evt.to.closest('.project, .task');
-            const fromParentId = fromParentEl.dataset.id;
-            const toParentId = toParentEl.dataset.id;
-            
-            const fromParentNode = fromParentId ? findTaskById(data, fromParentId) : { children: data };
-            const [movedItem] = fromParentNode.children.splice(evt.oldIndex, 1);
+      group: 'nested', animation: 150, handle: ".drag-handle",
+      disabled: showCompletedProjects,
+      onEnd: (evt) => {
+        const fromParentEl = evt.from.closest('.project, .task');
+        const toParentEl = evt.to.closest('.project, .task');
+        const fromParentId = fromParentEl.dataset.id;
+        const toParentId = toParentEl.dataset.id;
+        
+        const fromParentNode = fromParentId ? findTaskById(data, fromParentId) : { children: data };
+        const [movedItem] = fromParentNode.children.splice(evt.oldIndex, 1);
 
-            const toParentNode = toParentId ? findTaskById(data, toParentId) : { children: data };
-            if (!toParentNode.children) toParentNode.children = [];
-            toParentNode.children.splice(evt.newIndex, 0, movedItem);
-            
-            updateAllAncestorStatus(movedItem.id);
-            if (fromParentId !== toParentId) {
-                if(fromParentNode.id) updateAllAncestorStatus(fromParentNode.id);
-            }
-            rerenderViews();
+        const toParentNode = toParentId ? findTaskById(data, toParentId) : { children: data };
+        if (!toParentNode.children) toParentNode.children = [];
+        toParentNode.children.splice(evt.newIndex, 0, movedItem);
+        
+        updateAllAncestorStatus(movedItem.id);
+        if (fromParentId !== toParentId) {
+          if(fromParentNode.id) updateAllAncestorStatus(fromParentNode.id);
         }
+        rerenderViews();
+      }
     });
-}
+  }
 
-function initSortable() {
+  function initSortable() {
     if (projectList.sortableInstance) projectList.sortableInstance.destroy();
     projectList.sortableInstance = Sortable.create(projectList, {
-        animation: 150, handle: ".drag-handle",
-        disabled: showCompletedProjects,
-        onEnd: (evt) => {
-            const projectsToMove = showCompletedProjects ? data.filter(p => p.done) : data.filter(p => !p.done);
-            const otherProjects = showCompletedProjects ? data.filter(p => !p.done) : data.filter(p => p.done);
+      animation: 150, handle: ".drag-handle",
+      disabled: showCompletedProjects,
+      onEnd: (evt) => {
+        const projectsToMove = showCompletedProjects ? data.filter(p => p.done) : data.filter(p => !p.done);
+        const otherProjects = showCompletedProjects ? data.filter(p => !p.done) : data.filter(p => p.done);
     
-            const [movedItem] = projectsToMove.splice(evt.oldIndex, 1);
-            projectsToMove.splice(evt.newIndex, 0, movedItem);
+        const [movedItem] = projectsToMove.splice(evt.oldIndex, 1);
+        projectsToMove.splice(evt.newIndex, 0, movedItem);
 
-            data = showCompletedProjects ? [...otherProjects, ...projectsToMove] : [...projectsToMove, ...otherProjects];
-            rerenderViews();
-        }
+        data = showCompletedProjects ? [...otherProjects, ...projectsToMove] : [...projectsToMove, ...otherProjects];
+        rerenderViews();
+      }
     });
     
     document.querySelectorAll(".task-list").forEach(list => {
-        initSingleSortableList(list);
+      initSingleSortableList(list);
     });
-}
-
-// --- 初期化 ---
-initializeNodes(data);
-updateView();
-</script>
-
-  <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
-
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyBsGKvMYAkBKnj2es349pLVyBSpwlZKdO0",
-    authDomain: "firsttry1-2f932.firebaseapp.com",
-    projectId: "firsttry1-2f932",
-    storageBucket: "firsttry1-2f932.firebasestorage.app",
-    messagingSenderId: "915787263483",
-    appId: "1:915787263483:web:f1615d5f30f81a000c6f5e",
-    measurementId: "G-8ZMZ9M954T"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
+  }
 </script>
 </body>
 </html>
-
